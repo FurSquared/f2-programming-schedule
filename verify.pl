@@ -1,12 +1,13 @@
 #!/usr/bin/env perl
 
 use Data::Dumper qw/Dumper/;
+use String::Similarity;
 use Text::TabFile;
 use strict;
 
 ### Read the panel list
 
-my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
+my $panels = new Text::TabFile ('panels.tab', 1);
 my %panels;
 
 while ( my $ref = $panels->Read ) {
@@ -44,8 +45,28 @@ for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
 		for my $time (sort keys %{$data{$day}{$room}}) {
 			my $scheduled_panel = $data{$day}{$room}{$time};
+			next if $scheduled_panel =~ /^CLOSED$/i;
 			print "$scheduled_panel\n";
-			print "\tWARNING: Panel doesn't exist!\n" unless $panels{$scheduled_panel};
+			unless ( $panels{$scheduled_panel} ) {
+				print "\tWARNING: Panel doesn't exist!\n" unless $panels{$scheduled_panel};
+				my $guess = nearest($scheduled_panel);
+				print "\tShould it be \"$guess\"?\n";
+			}
+			print "\n";
 		}
 	}
+}
+
+sub nearest {
+	my $name_to_check = shift @_;
+	my $guess_score = 0;
+	my $guess_name = undef;
+	for my $panel_name (keys %panels) {
+		my $test = similarity($name_to_check, $panel_name);
+		if ($test > $guess_score) {
+			$guess_name = $panel_name;
+			$guess_score = $test;
+		}
+	}
+	return $guess_name;
 }
