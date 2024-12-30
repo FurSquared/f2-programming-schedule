@@ -1,5 +1,8 @@
 all: panels.tab schedule.tab
 
+clean:
+	rm -v panels.tab schedule.tab
+
 schedule.tab:
 	tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ Schedule.tsv > $@
 

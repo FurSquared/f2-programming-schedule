@@ -39,7 +39,7 @@ while ( my $row = $schedule->Read ) {
 
 ### Check things
 
-print Dumper(\%panels);
+#print Dumper(\%panels);
 
 for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
@@ -50,7 +50,7 @@ for my $day (keys %data) {
 			unless ( $panels{$scheduled_panel} ) {
 				print "\tWARNING: Panel doesn't exist!\n" unless $panels{$scheduled_panel};
 				my $guess = nearest($scheduled_panel);
-				print "\tShould it be \"$guess\"?\n";
+				print "\tShould it be \"$guess\"?\n" if $guess;
 			}
 			print "\n";
 		}
@@ -68,5 +68,5 @@ sub nearest {
 			$guess_score = $test;
 		}
 	}
-	return $guess_name;
+	return $guess_score >= 0.75 ? $guess_name : undef;
 }
