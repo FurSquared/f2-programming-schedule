@@ -14,21 +14,23 @@ while ( my $ref = $panels->Read ) {
 	$panels{$ref->{'Panel / Event Title:'}}++;
 }
 
+#print Dumper(\%panels);
+
+print scalar(keys %panels), " panels found on the master list.\n";
+
 ### Read the schedule
 
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
 
-my @rooms = ('Baird Stage', 'Crystal Ball Room', 'Panel Room 1 [Banquet] Walker',
-	'Panel Room 2 [Theater] Mitchell', 'Panel Room 3 [Theater] MacArthur',
-	'Small Panel Room 1 [Friday Meetups] Pabst', 'Small Panel Room 2 [Theater] Schlitz',
-	'Video Gaming Kilbourn', 'Tabletop Wright A/B', 'Miller', 'Usinger');
+my @rooms = qw/Crystal Kilbourn MacArthur Miller Mitchell Other Pabst
+               S201 Schlitz Usinger Walker Wright/;
 
 my %data;
 
 while ( my $row = $schedule->Read ) {
-	my $time = $row->{'Time\\Room'};
+	my $time = $row->{'Room'};
 	for my $room (@rooms) {
 		$data{'thursday'}{$room}{$time} = $row->{$room}      if $row->{$room};
 		$data{'friday'}{$room}{$time}   = $row->{$room.'_1'} if $row->{$room.'_1'};
@@ -37,9 +39,23 @@ while ( my $row = $schedule->Read ) {
 	}
 }
 
+my $count = 0;
+
+for my $day (keys %data) {
+	for my $room (keys %{$data{$day}}) {
+		for my $time (sort keys %{$data{$day}{$room}}) {
+			$count++;
+		}
+	}
+}
+
+print "$count panels found in the schedule.\n";
+
+#print Dumper(\%data);
+
 ### Check things
 
-#print Dumper(\%panels);
+print "==> CHECKING\n";
 
 for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
