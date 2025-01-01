@@ -8,10 +8,39 @@ use strict;
 ### Read the panel list
 
 my $panels = new Text::TabFile ('panels.tab', 1);
+
 my %panels;
+my %panelists;
 
 while ( my $ref = $panels->Read ) {
-	$panels{$ref->{'Panel / Event Title:'}}++;
+	my $id = $ref->{'Panel ID'};
+	my $title = $ref->{'Panel / Event Title:'};
+	#warn("WARN: Skip! $id") if $ref->{'IN/OUT'} !~ /^IN/i;
+    warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if defined $panels{$title};
+	$panels{$title}{'id'} = $id;
+
+	# Additional data
+	$panels{$title}{'length'} = $ref->{'Event Length'};
+
+	# Panelists
+	if ( $ref->{'Hosted by:'} ) {
+		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
+			$panels{$title}{'panelists'}{$host}++;
+			$panelists{$host}++;
+		}
+	} else {
+		warn("WARN: $title ($id) has no host\n");
+	}
+
+	if ( $ref->{'Special Guests'} ) {
+		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Special Guests'} ) {
+			$panels{$title}{'panelists'}{$host}++;
+			$panelists{$host}++;
+		}
+	}
+
+	# Input cleanup
+	$panels{$title}{'length'} =~ s/\s+minutes\s*//ig;
 }
 
 #print Dumper(\%panels);
@@ -55,23 +84,51 @@ print "$count panels found in the schedule.\n";
 
 ### Check things
 
-print "==> CHECKING\n";
+print "==> Checking panels...\n";
 
 for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
 		for my $time (sort keys %{$data{$day}{$room}}) {
 			my $scheduled_panel = $data{$day}{$room}{$time};
+
 			next if $scheduled_panel =~ /^CLOSED$/i;
-			print "$scheduled_panel\n";
+
+			my $warnings = 0;
+			my @info = ($scheduled_panel);
+
+			# Does the scheduled panel exist in the panel list
 			unless ( $panels{$scheduled_panel} ) {
-				print "\tWARNING: Panel doesn't exist!\n" unless $panels{$scheduled_panel};
+				push(@info, "WARNING: Panel doesn't exist!") unless $panels{$scheduled_panel};
 				my $guess = nearest($scheduled_panel);
-				print "\tShould it be \"$guess\"?\n" if $guess;
+				push(@info, "WARNING: Possibly a mispelling of \"$guess\"?") if $guess;
+				$warnings++;
 			}
-			print "\n";
+
+			my $panel_ref = $panels{$scheduled_panel};
+
+			# Check for panelist conflicts
+			my @panelists = keys %{$panel_ref->{'panelists'}};
+			push @info, "Panelists: " . join(", ", @panelists);
+
+			for my $panelist (@panelists) {
+				for my $test_room (keys %{$data{$day}}) {
+					next if $test_room eq $room;
+					my $test_panel = $data{$day}{$test_room}{$time};
+					if ( exists($panels{$test_panel}{'panelists'}{$panelist}) ) {
+						push @info, "WARNING: $panelist is double-booked in $room at $time on $test_panel";
+						$warnings++;
+					}
+				}
+			}
+
+			# Display info with warnings
+			print(join "\n\t", @info) if $warnings;
+			print "\n\n" if $warnings;
 		}
 	}
 }
+
+### Subroutines
 
 sub nearest {
 	my $name_to_check = shift @_;
