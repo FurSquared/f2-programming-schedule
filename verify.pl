@@ -9,18 +9,28 @@ use strict;
 
 my $panels = new Text::TabFile ('panels.tab', 1);
 
-my %panels;
-my %panelists;
+my %panels; # complex hash of panel data, keyed by name
+my %panelists; # counting hash of panelist names
 
 while ( my $ref = $panels->Read ) {
 	my $id = $ref->{'Panel ID'};
 	my $title = $ref->{'Panel / Event Title:'};
 	#warn("WARN: Skip! $id") if $ref->{'IN/OUT'} !~ /^IN/i;
-    warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if defined $panels{$title};
+    warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
 	$panels{$title}{'id'} = $id;
+	$panels{$title}{'title'} = $title;
 
 	# Additional data
+	$panels{$title}{'attend'} = $ref->{'Attendance'};
 	$panels{$title}{'length'} = $ref->{'Event Length'};
+	$panels{$title}{'pref'}{'thursday'} = $ref->{'Preference [Thursday]'};
+	$panels{$title}{'pref'}{'friday'}   = $ref->{'Preference [Friday]'};
+	$panels{$title}{'pref'}{'saturday'} = $ref->{'Preference [Saturday]'};
+	$panels{$title}{'pref'}{'sunday'}   = $ref->{'Preference [Sunday]'};
+	$panels{$title}{'avail'}{'thursday'} = $ref->{'Availability [Thursday]'};
+	$panels{$title}{'avail'}{'friday'}   = $ref->{'Availability [Friday]'};
+	$panels{$title}{'avail'}{'saturday'} = $ref->{'Availability [Saturday]'};
+	$panels{$title}{'avail'}{'sunday'}   = $ref->{'Availability [Sunday]'};
 
 	# Panelists
 	if ( $ref->{'Hosted by:'} ) {
@@ -52,19 +62,28 @@ print scalar(keys %panels), " panels found on the master list.\n";
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
-
 my @rooms = qw/Crystal Kilbourn MacArthur Miller Mitchell Other Pabst
                S201 Schlitz Usinger Walker Wright/;
 
-my %data;
+my %data; # Complex hash representing the panels already scheduled
+my %unscheduled; # Panel names that have cards but are not scheduled
 
 while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
-	for my $room (@rooms) {
-		$data{'thursday'}{$room}{$time} = $row->{$room}      if $row->{$room};
-		$data{'friday'}{$room}{$time}   = $row->{$room.'_1'} if $row->{$room.'_1'};
-		$data{'saturday'}{$room}{$time} = $row->{$room.'_2'} if $row->{$room.'_2'};
-		$data{'sunday'}{$room}{$time}   = $row->{$room.'_3'} if $row->{$room.'_3'};
+	if ($time =~ /(AM|PM)/ ) { # These are scheduled panels
+		for my $room (@rooms) {
+			$data{'thursday'}{$room}{$time} = $row->{$room}      if $row->{$room};
+			$data{'friday'}{$room}{$time}   = $row->{$room.'_1'} if $row->{$room.'_1'};
+			$data{'saturday'}{$room}{$time} = $row->{$room.'_2'} if $row->{$room.'_2'};
+			$data{'sunday'}{$room}{$time}   = $row->{$room.'_3'} if $row->{$room.'_3'};
+		}
+	} else { # These are cards in the parking lot
+		for my $column (@rooms, 'Room') {
+			for my $section ( qw/_1 _2 _3/ ) {
+				my $test = $row->{$column.$section};
+				$unscheduled{$test}++ if $test;
+			}
+		}
 	}
 }
 
@@ -79,8 +98,10 @@ for my $day (keys %data) {
 }
 
 print "$count panels found in the schedule.\n";
+print scalar(keys %unscheduled), " panel cards yet to be placed on the schedule.\n";
 
 #print Dumper(\%data);
+#print Dumper(\%unscheduled);
 
 ### Check things
 
@@ -126,6 +147,18 @@ for my $day (keys %data) {
 			print "\n\n" if $warnings;
 		}
 	}
+}
+
+print "==> Schedule suggester...\n";
+
+my %time;
+
+for my $panel_name ( keys %unscheduled ) {
+	my $panel_ref = $panels{$panel_name};
+	next unless $panel_ref;
+	next unless $panel_ref->{'pref'}->{'thursday'} !~ /X/;
+	next if $panel_name =~ /^Learn to play/i;
+	print Dumper($panel_ref);
 }
 
 ### Subroutines
