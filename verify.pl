@@ -127,6 +127,15 @@ for my $day (keys %data) {
 
 			my $panel_ref = $panels{$scheduled_panel};
 
+			# Have we scheduled this panel more than once?
+
+			my @times = &find_panel_in_data($scheduled_panel, \%data);
+			if (scalar(@times) > 1) {
+				push(@info, "WARNING: Panel is scheduled ".scalar(@times)." times.");
+				$warnings++;
+			}
+
+
 			# Check for panelist conflicts
 			my @panelists = keys %{$panel_ref->{'panelists'}};
 			push @info, "Panelists: " . join(", ", @panelists);
@@ -175,4 +184,23 @@ sub nearest {
 		}
 	}
 	return $guess_score >= 0.75 ? $guess_name : undef;
+}
+
+sub find_panel_in_data {
+	my $find_name = shift @_;
+	my $data = shift @_;
+
+	my @matches = ();
+
+	for my $day (keys %{data}) {
+		for my $room (keys %{$data->{$day}}) {
+			for my $time (sort keys %{$data->{$day}->{$room}}) {
+				if ( $data->{$day}->{$room}->{$time} eq $find_name ) {
+					push @matches, "$day $room $time";
+				}
+			}
+		}
+	}
+
+	return @matches;
 }
