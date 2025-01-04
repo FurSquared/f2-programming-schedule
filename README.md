@@ -19,7 +19,7 @@ Export the relevant files:
 
 Copy them locally and run the make process to fix header issues:
 
-  make clean all
+```make clean all```
 
 This will produce two additional files:
 
@@ -30,7 +30,7 @@ You can then run any of the scripts below:
 
 # Verify panel content
 
-  ./verify.pl
+```./verify.pl```
 
 This will do sanity checks:
 * Double scheduling of panels
@@ -38,11 +38,11 @@ This will do sanity checks:
 * Scheduled panels not in the approved panel list
 * Panels on the list not in the schedule
 
-* Merge utilities
+# Merge utilities
 
 These were used to merge the two schedule tabs.
 
-* merge-map-dittman-ids.pl
+* **merge-map-dittman-ids.pl** - 
   Generate a list of Dittman IDs in the order of the master panel tab so they can be pasted into it. (Crosswalking the two sheets)
-* merge-panel-tabs.pl
+* **merge-panel-tabs.pl** - 
   Generate output of Dittman tab data to put append to the master panel tab so they can be merged. It also performes some sanity checks to highlight any panel name or description difference.
