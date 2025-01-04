@@ -1,5 +1,7 @@
 #!/usr/bin/env perl
 
+# Figure out the dittman ID for the main panel list and put it in order
+
 use Data::Dumper qw/Dumper/;
 use Text::TabFile;
 use strict;
