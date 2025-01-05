@@ -37,3 +37,9 @@ inc/
 # Tabfiles
 *.tsv
 *.tab
+
+# Credentials
+credentials.txt
+
+# Selenium driver
+geckodriver.log

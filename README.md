@@ -45,3 +45,12 @@ These were used to merge the two schedule tabs.
 * **./merge-map-dittman-ids.pl** - Generate a list of Dittman IDs in the order of the master panel tab so they can be pasted into it. (Crosswalking the two sheets)
 * **./merge-panel-tabs.pl > additional-data.tab** - Generate output of Dittman tab data to put append to the master panel tab so they can be merged.
 * **./merge-verify.pl** - Compare the Master and Dittman schedule tabs to see differences
+
+# Pretalx utilities
+
+These depend on a credentials file of "credentials.txt" with username and password like:
+
+  username: mylogin@email.com
+  password: mypassword
+
+* **pretalx-create-events.py** - Reads the panel list and creates basic entries in pretalx.
