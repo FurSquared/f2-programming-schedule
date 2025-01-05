@@ -7,13 +7,13 @@ use strict;
 
 ### Read the panel list
 
-my $panels = new Text::TabFile ('panels.tab', 1);
+my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
 
 my %panels; # complex hash of panel data, keyed by name
 my %panelists; # counting hash of panelist names
 
 while ( my $ref = $panels->Read ) {
-	my $id = $ref->{'Panel ID'};
+	my $id = $ref->{'Dittman ID'};
 	my $title = $ref->{'Panel / Event Title:'};
 	#warn("WARN: Skip! $id") if $ref->{'IN/OUT'} !~ /^IN/i;
     warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
@@ -23,14 +23,14 @@ while ( my $ref = $panels->Read ) {
 	# Additional data
 	$panels{$title}{'attend'} = $ref->{'Attendance'};
 	$panels{$title}{'length'} = $ref->{'Event Length'};
-	$panels{$title}{'pref'}{'thursday'} = $ref->{'Preference [Thursday]'};
-	$panels{$title}{'pref'}{'friday'}   = $ref->{'Preference [Friday]'};
-	$panels{$title}{'pref'}{'saturday'} = $ref->{'Preference [Saturday]'};
-	$panels{$title}{'pref'}{'sunday'}   = $ref->{'Preference [Sunday]'};
-	$panels{$title}{'avail'}{'thursday'} = $ref->{'Availability [Thursday]'};
-	$panels{$title}{'avail'}{'friday'}   = $ref->{'Availability [Friday]'};
-	$panels{$title}{'avail'}{'saturday'} = $ref->{'Availability [Saturday]'};
-	$panels{$title}{'avail'}{'sunday'}   = $ref->{'Availability [Sunday]'};
+	$panels{$title}{'pref'}{'thursday'} = $ref->{'D_Preference [Thursday]'};
+	$panels{$title}{'pref'}{'friday'}   = $ref->{'D_Preference [Friday]'};
+	$panels{$title}{'pref'}{'saturday'} = $ref->{'D_Preference [Saturday]'};
+	$panels{$title}{'pref'}{'sunday'}   = $ref->{'D_Preference [Sunday]'};
+	$panels{$title}{'avail'}{'thursday'} = $ref->{'D_Availability [Thursday]'};
+	$panels{$title}{'avail'}{'friday'}   = $ref->{'D_Availability [Friday]'};
+	$panels{$title}{'avail'}{'saturday'} = $ref->{'D_Availability [Saturday]'};
+	$panels{$title}{'avail'}{'sunday'}   = $ref->{'D_Availability [Sunday]'};
 
 	# Panelists
 	if ( $ref->{'Hosted by:'} ) {
@@ -54,7 +54,6 @@ while ( my $ref = $panels->Read ) {
 }
 
 #print Dumper(\%panels);
-
 print scalar(keys %panels), " panels found on the master list.\n";
 
 ### Read the schedule
@@ -156,18 +155,6 @@ for my $day (keys %data) {
 			print "\n\n" if $warnings;
 		}
 	}
-}
-
-print "==> Schedule suggester...\n";
-
-my %time;
-
-for my $panel_name ( keys %unscheduled ) {
-	my $panel_ref = $panels{$panel_name};
-	next unless $panel_ref;
-	next unless $panel_ref->{'pref'}->{'thursday'} !~ /X/;
-	next if $panel_name =~ /^Learn to play/i;
-	print Dumper($panel_ref);
 }
 
 ### Subroutines

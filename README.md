@@ -42,7 +42,6 @@ This will do sanity checks:
 
 These were used to merge the two schedule tabs.
 
-* **merge-map-dittman-ids.pl** - 
-  Generate a list of Dittman IDs in the order of the master panel tab so they can be pasted into it. (Crosswalking the two sheets)
-* **merge-panel-tabs.pl** - 
-  Generate output of Dittman tab data to put append to the master panel tab so they can be merged. It also performes some sanity checks to highlight any panel name or description difference.
+* **./merge-map-dittman-ids.pl** - Generate a list of Dittman IDs in the order of the master panel tab so they can be pasted into it. (Crosswalking the two sheets)
+* **./merge-panel-tabs.pl > additional-data.tab** - Generate output of Dittman tab data to put append to the master panel tab so they can be merged.
+* **./merge-verify.pl** - Compare the Master and Dittman schedule tabs to see differences
