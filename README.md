@@ -50,8 +50,10 @@ These were used to merge the two schedule tabs.
 
 These depend on a credentials file of "credentials.txt" with username and password like:
 
-> username: mylogin@email.com
-> password: mypassword
+```
+username: mylogin@email.com
+password: mypassword
+```
 
 * **pretalx-create-events.py** - Reads the panel list and creates basic entries in pretalx.
 * **./pretalx-ids-for-schedule.pl > xwalk.tab** - Reads the session?.json files to build a pretlax ID xwalk based on panel name
