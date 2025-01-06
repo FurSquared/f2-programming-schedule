@@ -43,3 +43,6 @@ credentials.txt
 
 # Selenium driver
 geckodriver.log
+
+# Ignore session jsons
+session*.json
