@@ -13,6 +13,15 @@ map {$dittman_time_code{$_} = 'B'} ('1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', 
 map {$dittman_time_code{$_} = 'C'} ('5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM');
 map {$dittman_time_code{$_} = 'D'} ('9:00 PM', '9:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM', '12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM');
 
+my @times = ('9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM',
+	'1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM', '5:00 PM', '5:30 PM',
+    '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM', '9:00 PM', '9:30 PM', '10:00 PM', '10:30 PM',
+    '11:00 PM', '11:30 PM', '12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM');
+my %next_time;
+for my $i (0 .. $#times) {
+	$next_time{$times[$i]} = $times[$i+1] if $i+1 <= $#times;
+}
+
 my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
 
 my %panels; # complex hash of panel data, keyed by name
@@ -132,6 +141,28 @@ for my $day (keys %data) {
 
 			my $panel_ref = $panels{$scheduled_panel};
 
+			# Check: panelist conflicts
+
+			my @panelists = keys %{$panel_ref->{'panelists'}};
+
+			if (scalar(@panelists) < 1) {
+				push @info, "WARNING: No Panelists!";
+				$warnings++;
+			} else {
+				push @info, "Panelists: " . join(", ", @panelists);
+			}
+
+			for my $panelist (@panelists) {
+				for my $test_room (keys %{$data{$day}}) {
+					next if $test_room eq $room;
+					my $test_panel = $data{$day}{$test_room}{$time};
+					if ( exists($panels{$test_panel}{'panelists'}{$panelist}) ) {
+						push @info, "WARNING: $panelist is double-booked in $room at $time on $test_panel";
+						$warnings++;
+					}
+				}
+			}
+
 			# Check: Have we scheduled this panel more than once?
 
 			my @times = &find_panel_in_data($scheduled_panel, \%data);
@@ -146,29 +177,50 @@ for my $day (keys %data) {
 			my $time_pref = $panels{$scheduled_panel}{'pref'}{$day};
 			my $time_avail = $panels{$scheduled_panel}{'avail'}{$day};
 			if ( !$time_avail ) {
-				push @info, "No Availability data."
+				push @info, "WARNING: No Availability data."
 			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
-				push @info, "Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				push @info, "WARNING: Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
 				$warnings++;
 			} elsif ( $time_pref =~ /X/ or $time_pref !~ /$time_code/ ) {
-				push @info, "Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				push @info, "WARNING: Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
 				$warnings++;
 			}
 
-			# Check: panelist conflicts
-			my @panelists = keys %{$panel_ref->{'panelists'}};
-			push @info, "Panelists: " . join(", ", @panelists);
+			# Check: panel length
+			my $length = $panels{$scheduled_panel}{'length'};
 
-			for my $panelist (@panelists) {
-				for my $test_room (keys %{$data{$day}}) {
-					next if $test_room eq $room;
-					my $test_panel = $data{$day}{$test_room}{$time};
-					if ( exists($panels{$test_panel}{'panelists'}{$panelist}) ) {
-						push @info, "WARNING: $panelist is double-booked in $room at $time on $test_panel";
-						$warnings++;
+			if (! $length ) {
+				push @info, "WARNING: No Panel Lenth Data!";
+				$warnings++;
+			} elsif ( $length !~ /^\d+$/ ) {
+				push @info, "WARNING: Panel length is odd: \"$length\"?";
+				$warnings++;
+			} elsif ( $length > 120 or $length < 30 ) {
+				push @info, "WARNING: Panel length is odd: \"$length\"?";
+				$warnings++;
+			} else {
+				my $half_hours = int($length/30);
+				my $test_time = $time;
+				my @time_slots;
+				for my $i ( 1 .. $half_hours ) {
+					push @time_slots, $test_time;
+					$test_time = $next_time{$test_time};
+				}
+				#print "Time slots: ($length) ", join(",", @time_slots), "\n";
+				shift @time_slots; # We're scheduled on our own time, not a conflict
+				my $conflicts = 0;
+				for my $time_test (@time_slots) {
+					if ( defined $data{$day}{$room}{$time_test} ) {
+						$conflicts++;
 					}
 				}
+				if ($conflicts > 0) {
+					push @info, "WARNING: Panel is too-short on the schedule.";
+					$warnings++;
+				}
 			}
+			
+
 
 			# Display info with warnings
 			print(join "\n\t", @info) if $warnings;
