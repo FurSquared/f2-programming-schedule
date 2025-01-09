@@ -5,6 +5,16 @@ use String::Similarity;
 use Text::TabFile;
 use strict;
 
+=head1 Check the schedule against the panel list
+
+ * Does the scheduled panel exist in the panel list?
+ * Are there panelist conflicts? (multiple panels at the same time)
+ * Have we scheduled this panel more than once?
+ * Is there enough time for the panel length
+ * Is the pabel scheduled at an avaible and/or preferred panelist time?
+
+=cut
+
 ### Read the panel list
 
 my %dittman_time_code;
@@ -30,7 +40,7 @@ my %panelists; # counting hash of panelist names
 while ( my $ref = $panels->Read ) {
 	my $id = $ref->{'Dittman ID'};
 	my $title = $ref->{'Panel / Event Title:'};
-	#warn("WARN: Skip! $id") if $ref->{'IN/OUT'} !~ /^IN/i;
+	warn("WARN: Skip!") && next if $ref->{'Dittman ID'} eq 'NO'; # Old section headers
     warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
 	$panels{$title}{'id'} = $id;
 	$panels{$title}{'title'} = $title;
@@ -171,27 +181,15 @@ for my $day (keys %data) {
 				$warnings++;
 			}
 
-			# Check: panelist time
-			my $time_code = $dittman_time_code{$time};
-			die "Bad time code" unless $time_code;
-			my $time_pref = $panels{$scheduled_panel}{'pref'}{$day};
-			my $time_avail = $panels{$scheduled_panel}{'avail'}{$day};
-			if ( !$time_avail ) {
-				push @info, "WARNING: No Availability data."
-			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
-				push @info, "WARNING: Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
-				$warnings++;
-			} elsif ( $time_pref =~ /X/ or $time_pref !~ /$time_code/ ) {
-				push @info, "WARNING: Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
-				$warnings++;
-			}
-
 			# Check: panel length
+
 			my $length = $panels{$scheduled_panel}{'length'};
 
 			if (! $length ) {
-				push @info, "WARNING: No Panel Lenth Data!";
+				push @info, "WARNING: No Panel Length Data!";
 				$warnings++;
+			} elsif ( $length =~ /SPECIAL TIME/ ) {
+				push @info, "Special time/schedule for this panel.";
 			} elsif ( $length !~ /^\d+$/ ) {
 				push @info, "WARNING: Panel length is odd: \"$length\"?";
 				$warnings++;
@@ -219,8 +217,24 @@ for my $day (keys %data) {
 					$warnings++;
 				}
 			}
-			
 
+			# Check: panelist time
+	
+			my $time_code = $dittman_time_code{$time};
+			die "Bad time code" unless $time_code;
+			my $time_pref = $panels{$scheduled_panel}{'pref'}{$day};
+			my $time_avail = $panels{$scheduled_panel}{'avail'}{$day};
+			if ( $length =~ /SPECIAL TIME/ ) {
+				# Special schedule panels, don't usually have avail data
+			} elsif ( !$time_avail ) {
+				push @info, "WARNING: No Availability data."
+			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
+				push @info, "WARNING: Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				$warnings++;
+			} elsif ( $time_pref =~ /X/ or $time_pref !~ /$time_code/ ) {
+				push @info, "WARNING: Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				$warnings++;
+			}
 
 			# Display info with warnings
 			print(join "\n\t", @info) if $warnings;
