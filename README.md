@@ -19,7 +19,9 @@ Export the relevant files:
 
 Copy them locally and run the make process to fix header issues:
 
-```make clean all```
+```
+make clean all
+```
 
 This will produce two additional files:
 
@@ -30,7 +32,9 @@ You can then run any of the scripts below:
 
 # Verify panel content
 
-```./verify.pl```
+```
+./verify.pl
+```
 
 This will do sanity checks:
 * Double scheduling of panels

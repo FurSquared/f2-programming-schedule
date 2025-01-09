@@ -7,6 +7,12 @@ use strict;
 
 ### Read the panel list
 
+my %dittman_time_code;
+map {$dittman_time_code{$_} = 'A'} ('9:00 AM', '9:30 AM', '10:00 AM', '10:30 AM', '11:00 AM', '11:30 AM', '12:00 PM', '12:30 PM');
+map {$dittman_time_code{$_} = 'B'} ('1:00 PM', '1:30 PM', '2:00 PM', '2:30 PM', '3:00 PM', '3:30 PM', '4:00 PM', '4:30 PM');
+map {$dittman_time_code{$_} = 'C'} ('5:00 PM', '5:30 PM', '6:00 PM', '6:30 PM', '7:00 PM', '7:30 PM', '8:00 PM', '8:30 PM');
+map {$dittman_time_code{$_} = 'D'} ('9:00 PM', '9:30 PM', '10:00 PM', '10:30 PM', '11:00 PM', '11:30 PM', '12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM');
+
 my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
 
 my %panels; # complex hash of panel data, keyed by name
@@ -116,7 +122,7 @@ for my $day (keys %data) {
 			my $warnings = 0;
 			my @info = ($scheduled_panel);
 
-			# Does the scheduled panel exist in the panel list
+			# Check: Does the scheduled panel exist in the panel list
 			unless ( $panels{$scheduled_panel} ) {
 				push(@info, "WARNING: Panel doesn't exist!") unless $panels{$scheduled_panel};
 				my $guess = nearest($scheduled_panel);
@@ -126,7 +132,7 @@ for my $day (keys %data) {
 
 			my $panel_ref = $panels{$scheduled_panel};
 
-			# Have we scheduled this panel more than once?
+			# Check: Have we scheduled this panel more than once?
 
 			my @times = &find_panel_in_data($scheduled_panel, \%data);
 			if (scalar(@times) > 1) {
@@ -134,8 +140,22 @@ for my $day (keys %data) {
 				$warnings++;
 			}
 
+			# Check: panelist time
+			my $time_code = $dittman_time_code{$time};
+			die "Bad time code" unless $time_code;
+			my $time_pref = $panels{$scheduled_panel}{'pref'}{$day};
+			my $time_avail = $panels{$scheduled_panel}{'avail'}{$day};
+			if ( !$time_avail ) {
+				push @info, "No Availability data."
+			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
+				push @info, "Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				$warnings++;
+			} elsif ( $time_pref =~ /X/ or $time_pref !~ /$time_code/ ) {
+				push @info, "Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
+				$warnings++;
+			}
 
-			# Check for panelist conflicts
+			# Check: panelist conflicts
 			my @panelists = keys %{$panel_ref->{'panelists'}};
 			push @info, "Panelists: " . join(", ", @panelists);
 
