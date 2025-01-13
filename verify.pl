@@ -8,6 +8,7 @@ use strict;
 =head1 Check the schedule against the panel list
 
  * Does the scheduled panel exist in the panel list?
+ * Are all panels in the panel list on the schedule?
  * Are there panelist conflicts? (multiple panels at the same time)
  * Have we scheduled this panel more than once?
  * Is there enough time for the panel length
@@ -61,7 +62,7 @@ while ( my $ref = $panels->Read ) {
 	if ( $ref->{'Hosted by:'} ) {
 		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
 			$panels{$title}{'panelists'}{$host}++;
-			$panelists{$host}++;
+			$panelists{$host}{$title}++;
 		}
 	} else {
 		warn("WARN: $title ($id) has no host\n");
@@ -70,7 +71,7 @@ while ( my $ref = $panels->Read ) {
 	if ( $ref->{'Special Guests'} ) {
 		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Special Guests'} ) {
 			$panels{$title}{'panelists'}{$host}++;
-			$panelists{$host}++;
+			$panelists{$host}{$title}++;
 		}
 	}
 
@@ -131,35 +132,31 @@ print scalar(keys %unscheduled), " panel cards yet to be placed on the schedule.
 
 print "==> Checking panels...\n";
 
+my %scheduled_panels; # Simple hash of panels on the schedule
+my %warnings; # Complex has of problems
+
 for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
 		for my $time (sort keys %{$data{$day}{$room}}) {
 			my $scheduled_panel = $data{$day}{$room}{$time};
-
 			next if $scheduled_panel =~ /^CLOSED$/i;
-
-			my $warnings = 0;
-			my @info = ($scheduled_panel);
+			$scheduled_panels{$scheduled_panel}++;
 
 			# Check: Does the scheduled panel exist in the panel list
-			unless ( $panels{$scheduled_panel} ) {
-				push(@info, "WARNING: Panel doesn't exist!") unless $panels{$scheduled_panel};
+			unless ( defined $panels{$scheduled_panel} ) {
+				$warnings{'NOT_IN_LIST'}{$scheduled_panel}++;
 				my $guess = nearest($scheduled_panel);
-				push(@info, "WARNING: Possibly a mispelling of \"$guess\"?") if $guess;
-				$warnings++;
+				$warnings{'NOT_IN_LIST'}{$scheduled_panel} = $guess if $guess;
 			}
 
 			my $panel_ref = $panels{$scheduled_panel};
 
-			# Check: panelist conflicts
+			# Check: panelist conflicts / missing panelists
 
 			my @panelists = keys %{$panel_ref->{'panelists'}};
 
 			if (scalar(@panelists) < 1) {
-				push @info, "WARNING: No Panelists!";
-				$warnings++;
-			} else {
-				push @info, "Panelists: " . join(", ", @panelists);
+				$warnings{'NO_PANELISTS'}{$scheduled_panel}++;
 			}
 
 			for my $panelist (@panelists) {
@@ -167,8 +164,7 @@ for my $day (keys %data) {
 					next if $test_room eq $room;
 					my $test_panel = $data{$day}{$test_room}{$time};
 					if ( exists($panels{$test_panel}{'panelists'}{$panelist}) ) {
-						push @info, "WARNING: $panelist is double-booked in $room at $time on $test_panel";
-						$warnings++;
+						$warnings{'DOUBLE_BOOK'}{$scheduled_panel}{$panelist}{$test_panel}++;
 					}
 				}
 			}
@@ -177,8 +173,7 @@ for my $day (keys %data) {
 
 			my @times = &find_panel_in_data($scheduled_panel, \%data);
 			if (scalar(@times) > 1) {
-				push(@info, "WARNING: Panel is scheduled ".scalar(@times)." times.");
-				$warnings++;
+				$warnings{'MULTIPLE_TIMES'}{$scheduled_panel} = scalar(@times);
 			}
 
 			# Check: panel length
@@ -186,16 +181,13 @@ for my $day (keys %data) {
 			my $length = $panels{$scheduled_panel}{'length'};
 
 			if (! $length ) {
-				push @info, "WARNING: No Panel Length Data!";
-				$warnings++;
+				$warnings{'TIME_ERROR'}{$scheduled_panel} = "No panel length data.";
 			} elsif ( $length =~ /SPECIAL TIME/ ) {
-				push @info, "Special time/schedule for this panel.";
+				$warnings{'TIME_ERROR'}{$scheduled_panel} = "Panel is 'special' and no time checks performed";
 			} elsif ( $length !~ /^\d+$/ ) {
-				push @info, "WARNING: Panel length is odd: \"$length\"?";
-				$warnings++;
+				$warnings{'TIME_ERROR'}{$scheduled_panel} = "Can't parse length: \"$length\"?";
 			} elsif ( $length > 120 or $length < 30 ) {
-				push @info, "WARNING: Panel length is odd: \"$length\"?";
-				$warnings++;
+				$warnings{'TIME_ERROR'}{$scheduled_panel} = "Too big or too small: \"$length minutes\"?";
 			} else {
 				my $half_hours = int($length/30);
 				my $test_time = $time;
@@ -213,8 +205,7 @@ for my $day (keys %data) {
 					}
 				}
 				if ($conflicts > 0) {
-					push @info, "WARNING: Panel is too-short on the schedule.";
-					$warnings++;
+					$warnings{'TIME_ERROR'}{$scheduled_panel} = "Panel is too short on the schedule";
 				}
 			}
 
@@ -227,21 +218,80 @@ for my $day (keys %data) {
 			if ( $length =~ /SPECIAL TIME/ ) {
 				# Special schedule panels, don't usually have avail data
 			} elsif ( !$time_avail ) {
-				push @info, "WARNING: No Availability data."
+				$warnings{'AVAIL_NO_DATA'}{$scheduled_panel}++;
 			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
-				push @info, "WARNING: Panelist is NOT AVAILABLE at this time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
-				$warnings++;
+				$warnings{'AVAIL_BAD'} {$scheduled_panel} = "$time_code vs PREF: $time_pref / AVAIL: $time_avail";
 			} elsif ( $time_pref =~ /X/ or $time_pref !~ /$time_code/ ) {
-				push @info, "WARNING: Panelist would prefer another time. ($time_code vs PREF: $time_pref / AVAIL: $time_avail)";
-				$warnings++;
+				$warnings{'AVAIL_PREF'}{$scheduled_panel} = "$time_code vs PREF: $time_pref / AVAIL: $time_avail";
 			}
 
-			# Display info with warnings
-			print(join "\n\t", @info) if $warnings;
-			print "\n\n" if $warnings;
 		}
 	}
 }
+
+# Check that all panels in the list are on the schedule
+for my $panel (keys %panels) {
+	$warnings{'NOT_IN_SCHEDULE'}{$panel}++ unless defined $scheduled_panels{$panel};
+}
+
+# Print out the report
+
+my $line = ('=' x 80) . "\n";
+
+print $line, "Panels on the schedule, but not in the list-of-panels:\n", $line, "\n";
+print "\t", (join "\n\t", sort keys %{$warnings{'NOT_IN_LIST'}}), "\n\n";
+
+print $line, "Panels on the list-of-panels, but not in the schedule:\n", $line, "\n";
+print "\t", (join "\n\t", sort keys %{$warnings{'NOT_IN_SCHEDULE'}}), "\n\n";
+
+print $line, "Panels scheduled multiple times:\n", $line, "\n";
+print "\t", (join "\n\t", sort keys %{$warnings{'MULTIPLE_TIMES'}}), "\n\n";
+
+print $line, "Panels lacking panelist info:\n", $line, "\n";
+print "\t", (join "\n\t", sort keys %{$warnings{'NO_PANELISTS'}}), "\n\n";
+
+print $line, "Panels lacking availability info:\n", $line, "\n";
+print "\t", (join "\n\t", sort keys %{$warnings{'AVAIL_NO_DATA'}}), "\n\n";
+
+print $line, "Panelists are double booked:\n", $line, "\n";
+for my $panel ( sort keys %{$warnings{'DOUBLE_BOOK'}} ) {
+	for my $panelist ( sort keys %{$warnings{'DOUBLE_BOOK'}{$panel}} ) {
+		for my $conflict ( sort keys %{$warnings{'DOUBLE_BOOK'}{$panel}{$panelist}} ) {
+			print "\t'$panel' : $panelist is also on '$conflict'\n";
+		}
+	}
+}
+print "\n";
+
+print $line, "Panels with length/time issues:\n", $line, "\n";
+for my $panel ( sort keys %{$warnings{'TIME_ERROR'}} ) {
+	print "\t'$panel' : $warnings{'TIME_ERROR'}{$panel}\n";
+}
+print "\n";
+
+print $line, "Panelists are unavailable:\n", $line, "\n";
+for my $panel ( sort keys %{$warnings{'AVAIL_BAD'}} ) {
+	print "\t'$panel' : $warnings{'AVAIL_BAD'}{$panel}\n";
+}
+print "\n";
+
+print $line, "Panelists would prefer a different time:\n", $line, "\n";
+for my $panel ( sort keys %{$warnings{'AVAIL_PREF'}} ) {
+	print "\t'$panel' : $warnings{'AVAIL_PREF'}{$panel}\n";
+}
+print "\n";
+
+print $line, "Panelists with more than 5 panels:\n", $line, "\n";
+for my $panelist ( sort keys %panelists) {
+	my $count = scalar(keys %{$panelists{$panelist}});
+	if ( $count > 4 ) {
+		print "\t$panelist : $count panels\n\n";
+		map { print "\t\t$_\n"; } sort keys %{$panelists{$panelist}};
+		print "\n";
+	}
+}
+print "\n";
+
 
 ### Subroutines
 
