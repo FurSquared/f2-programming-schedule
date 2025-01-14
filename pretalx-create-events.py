@@ -124,12 +124,16 @@ def main():
             if length and length.isnumeric() is False:
                 length = ""
 
+            pt_id = row["Pretalx ID"]
+            if len(pt_id) > 2:
+                print(f"SKIPPING: (already has ID: {pt_id}) {title}")
+                continue
             if category.startswith("Board"):
                 print(f"SKIPPING: (game) {title}")
                 continue
             if len(desc) < 3:
-                print(f"SKIPPING: (nodesc) {title}")
-                continue
+                print(f"WARNING: (nodesc) {title}")
+                desc = "Needs a description."
 
             print(f"CREATING: {title}")
             add_session(brows, title, desc, length, category)
