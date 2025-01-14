@@ -26,6 +26,7 @@ my %panelists; # counting hash of panelist names
 while ( my $ref = $panels->Read ) {
 	my $id = $ref->{'Pretalx ID'};
 	my $title = $ref->{'Panel / Event Title:'};
+
 	$panels{$title}{'id'} = $id;
 	$panels{$title}{'title'} = $title;
 
@@ -53,7 +54,7 @@ while ( my $ref = $panels->Read ) {
 	$panels{$title}{'length'} =~ s/\s+minutes\s*//ig;
 }
 
-### Read the schedule
+### Append times time from schedule
 
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
@@ -65,13 +66,24 @@ while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
 	if ($time =~ /(AM|PM)/ ) { # These are scheduled panels
 		for my $room (@rooms) {
-			push @{$panels{$row->{$room}}{'when'}}, ['thursday', $time, $room] if $row->{$room};
-			push @{$panels{$row->{$room.'_1'}}{'when'}}, ['friday', $time, $room] if $row->{$room.'_1'};
-			push @{$panels{$row->{$room.'_2'}}{'when'}}, ['saturday', $time, $room] if $row->{$room.'_2'};
-			push @{$panels{$row->{$room.'_3'}}{'when'}}, ['sunday', $time, $room] if $row->{$room.'_3'};
+			for my $loc (['thursday', $room], ['friday', $room.'_1'], ['saturday', $room.'_2'], ['sunday', $room.'_3']) {
+				my $day = $loc->[0];
+				my $key = $loc->[1];
+				if ( $row->{$key} ) {
+					my $panel = $row->{$key};
+					if ( not defined $panels{$panel} ) {
+						warn("Scheduled '$panel' is not in the panel list.")
+					} else {
+						push @{$panels{$panel}{'when'}}, [$day, $time, $room]
+					}
+				}
+			}
 		}
 	}
 }
+
+#print Dumper(\%panels);
+#exit;
 
 ### Build the output file
 
@@ -80,5 +92,10 @@ my @heads = qw/id title length desc category/;
 print tl(@heads, 'day', 'time', 'room');
 for my $panel ( sort keys %panels ) {
 	my $p = $panels{$panel};
-	print tl((map {$p->{$_}} @heads), (defined $p->{'when'} ? @{$p->{'when'}->[0]} : ('','','')));
+	my @when = ('', '', '');
+	if ( defined $p->{'when'} ) {
+		my @times = @{$p->{'when'}}; # Panel can be multiple times
+		my @when = @{$times[0]}; # Just use the first time
+	}
+	print tl((map {$p->{$_}} @heads), $panel, @when);
 }
