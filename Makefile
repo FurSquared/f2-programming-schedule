@@ -3,6 +3,9 @@ all: schedule.tab
 clean:
 	rm -v panels.tab schedule.tab session?.json || true
 
+build.tab: schedule.tab
+	./pretalx-build-loadfile.pl > $@
+
 schedule.tab:
 	#tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ Schedule.tsv | head -n1 > $@
 	#tail +10 Master\ Schedule\ Document-\ F2\ 2025\ -\ Schedule.tsv >> $@
