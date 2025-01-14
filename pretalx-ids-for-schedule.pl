@@ -2,6 +2,10 @@
 
 # Figure out the Pretalx ID for the main panel list and put it in order
 
+# export TOKEN=apitokenid
+# make session1.json
+# ./pretalx-ids-for-schedule.pl
+
 use Data::Dumper qw/Dumper/;
 use File::Slurp;
 use JSON;
