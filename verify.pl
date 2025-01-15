@@ -36,7 +36,6 @@ for my $i (0 .. $#times) {
 my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
 
 my %panels; # complex hash of panel data, keyed by name
-my %panelists; # counting hash of panelist names
 
 while ( my $ref = $panels->Read ) {
 	my $id = $ref->{'Dittman ID'};
@@ -62,7 +61,6 @@ while ( my $ref = $panels->Read ) {
 	if ( $ref->{'Hosted by:'} ) {
 		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
 			$panels{$title}{'panelists'}{$host}++;
-			$panelists{$host}{$title}++;
 		}
 	} else {
 		warn("WARN: $title ($id) has no host\n");
@@ -71,7 +69,6 @@ while ( my $ref = $panels->Read ) {
 	if ( $ref->{'Special Guests'} ) {
 		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Special Guests'} ) {
 			$panels{$title}{'panelists'}{$host}++;
-			$panelists{$host}{$title}++;
 		}
 	}
 
@@ -133,7 +130,9 @@ print scalar(keys %unscheduled), " panel cards yet to be placed on the schedule.
 print "==> Checking panels...\n";
 
 my %scheduled_panels; # Simple hash of panels on the schedule
-my %warnings; # Complex has of problems
+my %panelists; # Complex hash used to check for panelist double-bookings
+my %simple_panelists; # Simple hash to count panels per panelist
+my %warnings; # Complex hash of problems
 
 for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
@@ -151,24 +150,6 @@ for my $day (keys %data) {
 
 			my $panel_ref = $panels{$scheduled_panel};
 
-			# Check: panelist conflicts / missing panelists
-
-			my @panelists = keys %{$panel_ref->{'panelists'}};
-
-			if (scalar(@panelists) < 1) {
-				$warnings{'NO_PANELISTS'}{$scheduled_panel}++;
-			}
-
-			for my $panelist (@panelists) {
-				for my $test_room (keys %{$data{$day}}) {
-					next if $test_room eq $room;
-					my $test_panel = $data{$day}{$test_room}{$time};
-					if ( exists($panels{$test_panel}{'panelists'}{$panelist}) ) {
-						$warnings{'DOUBLE_BOOK'}{$scheduled_panel}{$panelist}{$test_panel}++;
-					}
-				}
-			}
-
 			# Check: Have we scheduled this panel more than once?
 
 			my @times = &find_panel_in_data($scheduled_panel, \%data);
@@ -176,9 +157,10 @@ for my $day (keys %data) {
 				$warnings{'MULTIPLE_TIMES'}{$scheduled_panel} = scalar(@times);
 			}
 
-			# Check: panel length
+			# Check: panel length / conflicts with a following panel
 
 			my $length = $panels{$scheduled_panel}{'length'};
+			my @panel_times = ( $time );
 
 			if (! $length ) {
 				$warnings{'TIME_ERROR'}{$scheduled_panel} = "No panel length data.";
@@ -196,7 +178,7 @@ for my $day (keys %data) {
 					push @time_slots, $test_time;
 					$test_time = $next_time{$test_time};
 				}
-				#print "Time slots: ($length) ", join(",", @time_slots), "\n";
+				@panel_times = @time_slots; # Save the full run of times to check for panelist conflicts
 				shift @time_slots; # We're scheduled on our own time, not a conflict
 				my $conflicts = 0;
 				for my $time_test (@time_slots) {
@@ -206,6 +188,21 @@ for my $day (keys %data) {
 				}
 				if ($conflicts > 0) {
 					$warnings{'TIME_ERROR'}{$scheduled_panel} = "Panel is too short on the schedule";
+				}
+			}
+
+			# Check: missing panelists & store data for panelist-conflict check
+
+			my @panelists = keys %{$panel_ref->{'panelists'}};
+
+			if (scalar(@panelists) < 1) {
+				$warnings{'NO_PANELISTS'}{$scheduled_panel}++;
+			}
+
+			for my $panelist (@panelists) {
+				$simple_panelists{$panelist}{$scheduled_panel}++;
+				for my $time (@panel_times) {
+					$panelists{$panelist}{$day}{$time}{$scheduled_panel}++;
 				}
 			}
 
@@ -225,6 +222,19 @@ for my $day (keys %data) {
 				$warnings{'AVAIL_PREF'}{$scheduled_panel} = "$time_code vs PREF: $time_pref / AVAIL: $time_avail";
 			}
 
+		}
+	}
+}
+
+# Check for panelist conflicts
+
+for my $panelist (keys %panelists) {
+	for my $day ( keys %{$panelists{$panelist}}) {
+		for my $time ( keys %{$panelists{$panelist}{$day}}) {
+			my @panels = sort keys %{$panelists{$panelist}{$day}{$time}};
+			if ( scalar(@panels) > 1) {
+				$warnings{'DOUBLE_BOOK'}{$panelist}{"$day $time"} = \@panels;
+			}
 		}
 	}
 }
@@ -254,11 +264,10 @@ print $line, "Panels lacking availability info:\n", $line, "\n";
 print "\t", (join "\n\t", sort keys %{$warnings{'AVAIL_NO_DATA'}}), "\n\n";
 
 print $line, "Panelists are double booked:\n", $line, "\n";
-for my $panel ( sort keys %{$warnings{'DOUBLE_BOOK'}} ) {
-	for my $panelist ( sort keys %{$warnings{'DOUBLE_BOOK'}{$panel}} ) {
-		for my $conflict ( sort keys %{$warnings{'DOUBLE_BOOK'}{$panel}{$panelist}} ) {
-			print "\t'$panel' : $panelist is also on '$conflict'\n";
-		}
+for my $panelist ( sort keys %{$warnings{'DOUBLE_BOOK'}} ) {
+	for my $when ( sort keys %{$warnings{'DOUBLE_BOOK'}{$panelist}} ) {
+		my @panels = @{$warnings{'DOUBLE_BOOK'}{$panelist}{$when}};
+		print "\t$panelist is double-booked at $when on: '", join("', '", @panels), "'\n";
 	}
 }
 print "\n";
@@ -282,11 +291,11 @@ for my $panel ( sort keys %{$warnings{'AVAIL_PREF'}} ) {
 print "\n";
 
 print $line, "Panelists with more than 5 panels:\n", $line, "\n";
-for my $panelist ( sort keys %panelists) {
-	my $count = scalar(keys %{$panelists{$panelist}});
+for my $panelist ( sort keys %simple_panelists) {
+	my $count = scalar(keys %{$simple_panelists{$panelist}});
 	if ( $count > 4 ) {
 		print "\t$panelist : $count panels\n\n";
-		map { print "\t\t$_\n"; } sort keys %{$panelists{$panelist}};
+		map { print "\t\t$_\n"; } sort keys %{$simple_panelists{$panelist}};
 		print "\n";
 	}
 }

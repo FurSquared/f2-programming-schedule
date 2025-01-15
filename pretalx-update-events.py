@@ -35,6 +35,16 @@ def get_credentials() -> dict:
 def update_session(brows, pt_id, title, desc, category, room, start, end):
     brows.get(f'https://schedule.fursquared.com/orga/event/f2-2025/submissions/{pt_id}/')
 
+    p_title = WebDriverWait(brows, 20).until(
+        EC.visibility_of_element_located((By.ID, "id_title"))
+    )
+    p_title.clear()
+    p_title.send_keys(title)
+
+    p_desc = brows.find_element_by_id("id_abstract")
+    p_desc.clear()
+    p_desc.send_keys(desc)
+
     # Set the status to "accepted" when it's anything else
     status = brows.find_element(
         "xpath", "/html/body/div/div/main/h2/span/details/summary/h4/span"
@@ -48,9 +58,24 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
             "xpath", "/html/body/div/div/main/form/div[2]/span[2]/button"
         ).click()
 
+    if start and end:
+        brows.find_element(By.ID, "id_start").send_keys(start)
+        brows.find_element(By.ID, "id_end").send_keys(end)
 
-    brows.find_element(By.ID, "id_start").send_keys(start)
-    brows.find_element(By.ID, "id_end").send_keys(end)
+    # Track select
+    track_element = None
+    if category.startswith('Music'):
+        track_element = '//*[@id="choices--id_track-item-choice-2"]'
+    if category.startswith('Social'):
+        track_element = '//*[@id="choices--id_track-item-choice-3"]'
+    if category.startswith('Convention'):
+        track_element = '//*[@id="choices--id_track-item-choice-4"]'
+
+    if track_element:
+        brows.find_element(
+            "xpath", "/html/body/div/div/main/form/fieldset/div[4]/div/div/div[1]/div/div"
+        ).click()
+        brows.find_element("xpath", track_element).click()
 
     # Room select
     room_element = None
@@ -68,7 +93,9 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         room_element = '//*[@id="choices--id_room-item-choice-7"]'
     if room == "Schlitz":
         room_element = '//*[@id="choices--id_room-item-choice-8"]'
-    # Walker Usinger Wright Kilbourn - not in list yet
+    if room == "Walker":
+        room_element = '//*[@id="choices--id_room-item-choice-9"]'
+    # Usinger Wright Kilbourn - not in list yet
 
     if room_element:
         brows.find_element(
@@ -134,8 +161,8 @@ def main():
             day = row["day"]
             time = row["time"]
 
-            start = ""
-            end = ""
+            start = None
+            end = None
 
             if day and time and length:
                 if row["day"] == "thursday":

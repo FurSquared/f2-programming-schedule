@@ -97,5 +97,5 @@ for my $panel ( sort keys %panels ) {
 		my @times = @{$p->{'when'}}; # Panel can be multiple times
 		@when = @{$times[0]}; # Just use the first time
 	}
-	print tl((map {$p->{$_}} @heads), $panel, @when);
+	print tl((map {$p->{$_}} @heads), @when);
 }

@@ -1,7 +1,7 @@
 all: schedule.tab
 
 clean:
-	rm -v panels.tab schedule.tab session?.json || true
+	rm -v build.tab panels.tab schedule.tab session?.json || true
 
 build.tab: schedule.tab
 	./pretalx-build-loadfile.pl > $@
