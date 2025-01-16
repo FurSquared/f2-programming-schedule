@@ -59,5 +59,14 @@ username: mylogin@email.com
 password: mypassword
 ```
 
+## Create new panels:
+
 * **pretalx-create-events.py** - Reads the panel list and creates basic entries in pretalx.
 * **./pretalx-ids-for-schedule.pl > xwalk.tab** - Reads the session?.json files to build a pretlax ID xwalk based on panel name
+
+## Updating data
+
+Updating pretalx from the tabfiles requires a couple of steps. You build a preload file, and then run the loader.
+
+* **./pretalx-build-loadfile.pl > build.tab** (This command can be run as "make build.tab")
+* **./pretalx-update-events.py**
