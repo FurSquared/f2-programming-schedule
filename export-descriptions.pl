@@ -5,16 +5,31 @@ use strict;
 
 my $panels = new Text::TabFile ('Master Schedule Document- F2 2025 - Panels To Schedule.tsv', 1);
 
+my %fields = (
+	id => 'Pretalx ID',
+	title => 'Panel / Event Title:',
+	hosts => 'Hosted by:',
+	guests => 'Special Guests',
+	desc => 'Event / Panel Description:',
+	age => 'Does this event contain Mature Content?'
+);
+
+my @data;
+
 while ( my $ref = $panels->Read ) {
-	my $id = $ref->{'Pretalx ID'};
-	my $title = $ref->{'Panel / Event Title:'};
-	my $hosts = $ref->{'Hosted by:'};
-	my $guests = $ref->{'Special Guests'};
+	my %panel;
+	map {$panel{$_} = $ref->{$fields{$_}}} keys %fields;
+	push @data, \%panel;
+}
 
-	my $desc = $ref->{'Event / Panel Description:'};
+for my $p (sort { lc($a->{'title'}) cmp lc($b->{'title'}) } @data) {
+	my $age_warn = '';
+	$age_warn = ' (18+)' if $p->{'age'} =~ /^18/;
+	$age_warn = ' (21+)' if $p->{'age'} =~ /^21/;
 
-	print "<h3>$title</h3>\n",
-	      "<b>Hosted By: $hosts</b><br />\n",
-	      ( $guests ? "<b>Special Guests: $guests</b><br />\n" : "" ),
-          "<p>$desc</p>\n\n";
+	print "<font size=+1><b><u>", $p->{'title'}, $age_warn, "</font></b></u><br />\n",
+	      "<b>Hosted By: ", $p->{'hosts'},
+	      ( $p->{'guests'} ? " with ".$p->{'guests'} : "" ),
+		  "</b><br />\n",
+          "<p>", $p->{'desc'}, "</p>\n\n";
 }
