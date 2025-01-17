@@ -3,14 +3,15 @@ all: schedule.tab
 clean:
 	rm -v build.tab panels.tab schedule.tab session?.json || true
 
+superclean: clean
+	rm -v *.tsv || true
+
 build.tab: schedule.tab
 	./pretalx-build-loadfile.pl > $@
 
 schedule.tab:
-	#tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ Schedule.tsv | head -n1 > $@
-	#tail +10 Master\ Schedule\ Document-\ F2\ 2025\ -\ Schedule.tsv >> $@
-	tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ Dittman\ Draft.tsv | head -n1 > $@
-	tail +10 Master\ Schedule\ Document-\ F2\ 2025\ -\ Dittman\ Draft.tsv >> $@
+	tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ SCHEDULE.tsv | head -n1 > $@
+	tail +10 Master\ Schedule\ Document-\ F2\ 2025\ -\ SCHEDULE.tsv >> $@
 
 panels.tab:
 	tail +2 "Master Schedule Document- F2 2025 - Panels To Schedule - Dittman.tsv" > $@
