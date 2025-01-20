@@ -7,6 +7,7 @@ import sys
 from datetime import datetime, timedelta
 from time import sleep
 
+import argparse
 import csv
 
 from selenium import webdriver
@@ -70,6 +71,10 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         track_element = '//*[@id="choices--id_track-item-choice-3"]'
     if category.startswith('Convention'):
         track_element = '//*[@id="choices--id_track-item-choice-4"]'
+    if category.startswith('Audience'):
+        track_element = '//*[@id="choices--id_track-item-choice-5"]'
+    if category.startswith('Board'):
+        track_element = '//*[@id="choices--id_track-item-choice-6"]'
 
     if track_element:
         brows.find_element(
@@ -95,7 +100,11 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         room_element = '//*[@id="choices--id_room-item-choice-8"]'
     if room == "Walker":
         room_element = '//*[@id="choices--id_room-item-choice-9"]'
-    # Usinger Wright Kilbourn - not in list yet
+    if room == "Kilbourn":
+        room_element = '//*[@id="choices--id_room-item-choice-10"]'
+    if room == "Wright B & C":
+        room_element = '//*[@id="choices--id_room-item-choice-11"]'
+    # Usinger - not in list yet
 
     if room_element:
         brows.find_element(
@@ -139,13 +148,16 @@ def login(creds):
 
 def main():
     """The main program -- do I really need to docstring this?"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", help="Input tabfile", required=True)
+    args = parser.parse_args()
 
     print("Logging in.")
     creds = get_credentials()
     brows = login(creds)
     _ = ActionChains(brows)
 
-    with open("build.tab", "r", encoding="utf-8") as file:
+    with open(args.input, "r", encoding="utf-8") as file:
         reader = csv.DictReader(file, delimiter="\t")
         for row in reader:
             pt_id = row["id"]
@@ -173,6 +185,10 @@ def main():
                     start = datetime.strptime(f'2025-02-22 {time}', "%Y-%m-%d %I:%M %p")
                 if row["day"] == "sunday":
                     start = datetime.strptime(f'2025-02-23 {time}', "%Y-%m-%d %I:%M %p")
+
+                if time in ['12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM']:
+                    start = start + timedelta(minutes=1440)
+
                 end = start + timedelta(minutes=int(length))
 
                 start = start.strftime("%m/%d/%Y, %I:%M %p")
