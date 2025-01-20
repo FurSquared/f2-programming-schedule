@@ -6,16 +6,17 @@ clean:
 realclean superclean: clean
 	rm -v *.tsv || true
 
-pretalx-add: Master\ Schedule\ Document-\ F2\ 2025\ -\ Additional\ Panels.tsv
-	tail +23 'Master Schedule Document- F2 2025 - Additional Panels.tsv' > pretalx-to-add.tab
-	./pretalx-create-events.py -i pretalx-to-add.tab | tee pretalx-to-add.tab.out
+pretalx-add: additional-panels.tab
+	./pretalx-create-events.py -i $@ | tee $@.out
+
+additional-panels.tab: Master\ Schedule\ Document-\ F2\ 2025\ -\ Additional\ Panels.tsv
+	tail +23 'Master Schedule Document- F2 2025 - Additional Panels.tsv' > additional-panels.tab
 
 build.tab: schedule.tab
 	./pretalx-build-loadfile.pl > $@
 
-schedule.tab:
-	tail +7 Master\ Schedule\ Document-\ F2\ 2025\ -\ SCHEDULE.tsv | head -n1 > $@
-	tail +10 Master\ Schedule\ Document-\ F2\ 2025\ -\ SCHEDULE.tsv >> $@
+schedule.tab: Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv
+	tail +3 Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv > $@
 
 panels.tab:
 	tail +2 "Master Schedule Document- F2 2025 - Panels To Schedule - Dittman.tsv" > $@
