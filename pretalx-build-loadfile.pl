@@ -59,8 +59,8 @@ while ( my $ref = $panels->Read ) {
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
-my @rooms = qw/Crystal Kilbourn MacArthur Miller Mitchell Other Pabst
-               S201 Schlitz Usinger Walker Wright/;
+my @rooms = ('Crystal Ballroom', qw/Kilbourn MacArthur Miller Mitchell 
+	         Other Pabst S201 Schlitz Usinger Walker Wright/);
 
 while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
@@ -74,7 +74,10 @@ while ( my $row = $schedule->Read ) {
 					if ( not defined $panels{$panel} ) {
 						warn("Scheduled '$panel' is not in the panel list.")
 					} else {
-						push @{$panels{$panel}{'when'}}, [$day, $time, $room]
+						my $room_rewrite = $room;
+						$room_rewrite = 'Crystal' if $room =~ /Crystal/;
+						$room_rewrite = 'Wright' if $room =~ /Wright/;
+						push @{$panels{$panel}{'when'}}, [$day, $time, $room_rewrite]
 					}
 				}
 			}
@@ -87,9 +90,9 @@ while ( my $row = $schedule->Read ) {
 
 ### Build the output file
 
-my @heads = qw/id title length desc category/;
+my @heads = qw/length category id title desc/;
 
-print tl(@heads, 'day', 'time', 'room');
+print tl('day', 'time', 'room', @heads);
 for my $panel ( sort keys %panels ) {
 	my $p = $panels{$panel};
 	my @when = ('', '', '');
@@ -97,5 +100,5 @@ for my $panel ( sort keys %panels ) {
 		my @times = @{$p->{'when'}}; # Panel can be multiple times
 		@when = @{$times[0]}; # Just use the first time
 	}
-	print tl((map {$p->{$_}} @heads), @when);
+	print tl(@when, (map {$p->{$_}} @heads));
 }
