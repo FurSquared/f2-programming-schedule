@@ -3,8 +3,12 @@ all: schedule.tab
 clean:
 	rm -v build.tab panels.tab schedule.tab session?.json || true
 
-superclean: clean
+realclean superclean: clean
 	rm -v *.tsv || true
+
+pretalx-add: Master\ Schedule\ Document-\ F2\ 2025\ -\ Additional\ Panels.tsv
+	tail +23 'Master Schedule Document- F2 2025 - Additional Panels.tsv' > pretalx-to-add.tab
+	./pretalx-create-events.py -i pretalx-to-add.tab | tee pretalx-to-add.tab.out
 
 build.tab: schedule.tab
 	./pretalx-build-loadfile.pl > $@

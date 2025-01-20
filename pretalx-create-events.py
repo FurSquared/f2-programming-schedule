@@ -2,6 +2,7 @@
 """ Add new events to pretalx from the panel list
 """
 
+import argparse
 import time
 import sys
 
@@ -30,7 +31,7 @@ def get_credentials() -> dict:
     return credentials
 
 
-def add_session(brows, title, desc, length, category):
+def add_session(brows, title, desc):
     brows.get("https://schedule.fursquared.com/orga/event/f2-2025/submissions/new")
 
     p_title = WebDriverWait(brows, 20).until(
@@ -54,23 +55,15 @@ def add_session(brows, title, desc, length, category):
         "xpath", '//*[@id="choices--id_submission_type-item-choice-2"]'
     ).click()
 
-    brows.find_element_by_id("id_duration").send_keys(length)
-
-    # Category as pretalx track
-    # brows.find_element("xpath", "/html/body/div/div/main/form/fieldset/div[7]/div/div/div[1]/div/div").click()
-    # brows.find_element("xpath", "/html/body/div/div/main/form/fieldset/div[7]/div/div/div[2]/input").send_keys(category)
-
     # Save
     brows.find_element(
         "xpath", "/html/body/div/div/main/form/fieldset/div[16]/span[2]/button"
     ).click()
+
     time.sleep(5)
 
-    # id_internal_notes
-    # room
-    # id_track
-    # id_email (opt)
-    # id_speaker_name (opt)
+    raw_url = brows.current_url
+    return raw_url.split("/")[-2]
 
 
 def login(creds):
@@ -103,40 +96,39 @@ def login(creds):
 
 def main():
     """The main program -- do I really need to docstring this?"""
+    parser = argparse.ArgumentParser()
+    parser.add_argument("-i", "--input", help="Input tabfile", required=True)
+    parser.add_argument(
+        "--id", help="Column name for Pretalx ID in input tabfile", default="id"
+    )
+    parser.add_argument(
+        "--title", help="Column name for panel title in input tabfile", default="title"
+    )
+    parser.add_argument(
+        "--desc",
+        help="Column name for panel description in input tabfile",
+        default="desc",
+    )
+    args = parser.parse_args()
 
-    print("Logging in.")
     creds = get_credentials()
     brows = login(creds)
     _ = ActionChains(brows)
 
-    with open(
-        "Master Schedule Document- F2 2025 - Panels To Schedule.tsv",
-        "r",
-        encoding="utf-8",
-    ) as file:
+    with open(args.input, "r", encoding="utf-8") as file:
         reader = csv.DictReader(file, delimiter="\t")
+
         for row in reader:
-            title = row["Panel / Event Title:"]
-            desc = row["Event / Panel Description:"]
-            category = row["Category:"]
+            pt_id = row[args.id]
+            title = row[args.title]
+            desc = row[args.desc]
 
-            length = row["Event Length"].split(" ")[0]
-            if length and length.isnumeric() is False:
-                length = ""
-
-            pt_id = row["Pretalx ID"]
             if len(pt_id) > 2:
-                print(f"SKIPPING: (already has ID: {pt_id}) {title}")
+                print(f"SKIP\t{pt_id}\t{title}")
                 continue
-            if category.startswith("Board"):
-                print(f"SKIPPING: (game) {title}")
-                continue
-            if len(desc) < 3:
-                print(f"WARNING: (nodesc) {title}")
-                desc = "Needs a description."
 
-            print(f"CREATING: {title}")
-            add_session(brows, title, desc, length, category)
+            new_id = add_session(brows, title, desc)
+            print(f"CREATE\t{new_id}\t{title}")
 
 
 if __name__ == "__main__":
