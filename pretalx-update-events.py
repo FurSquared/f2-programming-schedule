@@ -50,10 +50,10 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
     status = brows.find_element(
         "xpath", "/html/body/div/div/main/h2/span/details/summary/h4/span"
     )
-    if status.text != "accepted":
+    if status.text != "confirmed":
         status.click()
         brows.find_element(
-            "xpath", "/html/body/div/div/main/h2/span/details/div/a[1]/span"
+            "xpath", "/html/body/div/div/main/h2/span/details/div/a[2]/span"
         ).click()
         brows.find_element(
             "xpath", "/html/body/div/div/main/form/div[2]/span[2]/button"
