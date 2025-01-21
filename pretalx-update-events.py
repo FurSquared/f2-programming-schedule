@@ -73,8 +73,10 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         track_element = '//*[@id="choices--id_track-item-choice-4"]'
     if category.startswith('Audience'):
         track_element = '//*[@id="choices--id_track-item-choice-5"]'
-    if category.startswith('Board'):
+    if category.startswith('Board') or category == 'Gaming' or category.startswith('Video'):
         track_element = '//*[@id="choices--id_track-item-choice-6"]'
+    if category.startswith('Dance'):
+        track_element = '//*[@id="choices--id_track-item-choice-7"]'
 
     if track_element:
         brows.find_element(
@@ -92,18 +94,20 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         room_element = '//*[@id="choices--id_room-item-choice-4"]'
     if room == "Mitchell":
         room_element = '//*[@id="choices--id_room-item-choice-5"]'
-    if room == "Pabst":
-        room_element = '//*[@id="choices--id_room-item-choice-6"]'
-    if room == "Miller":
-        room_element = '//*[@id="choices--id_room-item-choice-7"]'
-    if room == "Schlitz":
-        room_element = '//*[@id="choices--id_room-item-choice-8"]'
     if room == "Walker":
+        room_element = '//*[@id="choices--id_room-item-choice-6"]'
+    if room == "Pabst":
+        room_element = '//*[@id="choices--id_room-item-choice-7"]'
+    if room == "Miller":
+        room_element = '//*[@id="choices--id_room-item-choice-8"]'
+    if room == "Schlitz":
         room_element = '//*[@id="choices--id_room-item-choice-9"]'
-    if room == "Kilbourn":
+    if room == "Empire":
         room_element = '//*[@id="choices--id_room-item-choice-10"]'
-    if room == "Wright B & C":
+    if room == "Kilbourn":
         room_element = '//*[@id="choices--id_room-item-choice-11"]'
+    if room == "Wright B & C":
+        room_element = '//*[@id="choices--id_room-item-choice-12"]'
     # Usinger - not in list yet
 
     if room_element:

@@ -59,8 +59,9 @@ while ( my $ref = $panels->Read ) {
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
-my @rooms = ('Crystal Ballroom', qw/Kilbourn MacArthur Miller Mitchell 
-	         Other Pabst S201 Schlitz Usinger Walker Wright/);
+my @rooms = ('Crystal Ballroom', 'Empire Ballroom', 
+	        qw/Kilbourn MacArthur Miller Mitchell Other
+	           Pabst S201 Schlitz Usinger Walker Wright/);
 
 while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
@@ -76,6 +77,7 @@ while ( my $row = $schedule->Read ) {
 					} else {
 						my $room_rewrite = $room;
 						$room_rewrite = 'Crystal' if $room =~ /Crystal/;
+						$room_rewrite = 'Empire' if $room =~ /Empire/;
 						$room_rewrite = 'Wright' if $room =~ /Wright/;
 						push @{$panels{$panel}{'when'}}, [$day, $time, $room_rewrite]
 					}
