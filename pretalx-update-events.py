@@ -42,7 +42,7 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
     p_title.clear()
     p_title.send_keys(title)
 
-    p_desc = brows.find_element_by_id("id_abstract")
+    p_desc = brows.find_element(By.ID, "id_abstract")
     p_desc.clear()
     p_desc.send_keys(desc)
 
@@ -166,9 +166,24 @@ def main():
         for row in reader:
             pt_id = row["id"]
             title = row["title"]
-            desc = row["desc"]
             category = row["category"]
             room = row["room"]
+
+            desc = ""
+
+            if "hosts" in row:
+                hosts = row["hosts"]
+                if len(hosts) > 2:
+                    desc =  f"Hosted by: {hosts}"
+
+                    if "guests" in row:
+                        guests = row["guests"]
+                        if len(guests) > 2:
+                            desc = f"{desc} with {guests}"
+
+                    desc = desc + "\n\n"
+
+            desc = desc + row["desc"]
 
             # Time math is fun
             length = row["length"]

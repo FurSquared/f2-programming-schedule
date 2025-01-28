@@ -35,6 +35,9 @@ while ( my $ref = $panels->Read ) {
 	$panels{$title}{'desc'} = $ref->{'Event / Panel Description:'};
 	$panels{$title}{'category'} = $ref->{'Category:'};
 
+    $panels{$title}{'hosts'} = $ref->{'Hosted by:'};
+    $panels{$title}{'guests'} = $ref->{'Special Guests'};
+
 	# Panelists
 	if ( $ref->{'Hosted by:'} ) {
 		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
@@ -92,7 +95,7 @@ while ( my $row = $schedule->Read ) {
 
 ### Build the output file
 
-my @heads = qw/length category id title desc/;
+my @heads = qw/length category id title hosts guests desc/;
 
 print tl('day', 'time', 'room', @heads);
 for my $panel ( sort keys %panels ) {
