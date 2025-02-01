@@ -106,8 +106,12 @@ def update_session(brows, pt_id, title, desc, category, room, start, end):
         room_element = '//*[@id="choices--id_room-item-choice-10"]'
     if room == "Kilbourn":
         room_element = '//*[@id="choices--id_room-item-choice-11"]'
-    if room == "Wright B & C":
+    if room == "Wright B":
         room_element = '//*[@id="choices--id_room-item-choice-12"]'
+    if room == "Wright C":
+        room_element = '//*[@id="choices--id_room-item-choice-13"]'
+    if room == "Sponsor's Lounge" or room == "Hotel Lower Lobby":
+        room_element = '//*[@id="choices--id_room-item-choice-14"]'
     # Usinger - not in list yet
 
     if room_element:
@@ -171,10 +175,14 @@ def main():
 
             desc = ""
 
+            if room == "Sponsor's Lounge" or room == "Hotel Lower Lobby":
+                title = f"{title} ({room})"
+                desc = f"Location: {room}\n"
+
             if "hosts" in row:
                 hosts = row["hosts"]
                 if len(hosts) > 2:
-                    desc =  f"Hosted by: {hosts}"
+                    desc =  f"{desc}Hosted by: {hosts}"
 
                     if "guests" in row:
                         guests = row["guests"]

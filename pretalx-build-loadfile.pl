@@ -60,28 +60,43 @@ while ( my $ref = $panels->Read ) {
 ### Append times time from schedule
 
 my $schedule = new Text::TabFile ('schedule.tab', 1);
-my @header = $schedule->fields;
 
-my @rooms = ('Crystal Ballroom', 'Empire Ballroom', 
-	        qw/Kilbourn MacArthur Miller Mitchell Other
-	           Pabst S201 Schlitz Usinger Walker Wright/);
+my @days = qw/thursday friday saturday sunday/;
+
+my %headers;
+my $day_position = -1;
+for my $header ($schedule->fields) {
+	if ( $header =~ /^Room/ ) {
+		$day_position++;
+	} else {
+		push @{ $headers{$days[$day_position]} }, $header;
+	}
+}
+
+#print Dumper(\%headers);
+#exit;
 
 while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
 	if ($time =~ /(AM|PM)/ ) { # These are scheduled panels
-		for my $room (@rooms) {
-			for my $loc (['thursday', $room], ['friday', $room.'_1'], ['saturday', $room.'_2'], ['sunday', $room.'_3']) {
-				my $day = $loc->[0];
-				my $key = $loc->[1];
+		for my $day (@days) {
+			for my $key (@{$headers{$day}}) {
+				my $room = $key;
+				$room =~ s/_\d+$//;
 				if ( $row->{$key} ) {
+					#print STDERR "$room\n";
 					my $panel = $row->{$key};
+					if ( $room eq 'Other' ) {
+						$panel =~ /(.+) \((.+)\)/ or die "Other room fail.";
+          				$panel = $1;
+          				$room = $2;
+					}
 					if ( not defined $panels{$panel} ) {
 						warn("Scheduled '$panel' is not in the panel list.")
 					} else {
 						my $room_rewrite = $room;
 						$room_rewrite = 'Crystal' if $room =~ /Crystal/;
 						$room_rewrite = 'Empire' if $room =~ /Empire/;
-						$room_rewrite = 'Wright' if $room =~ /Wright/;
 						push @{$panels{$panel}{'when'}}, [$day, $time, $room_rewrite]
 					}
 				}

@@ -16,7 +16,8 @@ build.tab: schedule.tab
 	./pretalx-build-loadfile.pl > $@
 
 schedule.tab: Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv
-	tail +3 Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv > $@
+	tail +3 Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv | head -n1 | sed -e 's/Wright B & C Board Gaming		/Wright B	Wright C	/g' -e 's/ Board Gaming//g' -e 's/ Video Gaming//g' -e 's/		/	Other	/g' > $@
+	tail +4 Master\ Schedule\ Document-\ F2\ 2025\ -\ FOR\ PRINT-Pocket\ Schedule.tsv >> $@
 
 panels.tab:
 	tail +2 "Master Schedule Document- F2 2025 - Panels To Schedule - Dittman.tsv" > $@
