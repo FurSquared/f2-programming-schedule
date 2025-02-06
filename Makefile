@@ -29,3 +29,6 @@ session1.json:
 	curl -X GET 'https://schedule.fursquared.com/api/events/f2-2025/submissions/?limit=25&offset=75' -H "Authorization: Token ${TOKEN}" | tee session4.json | jq .
 	curl -X GET 'https://schedule.fursquared.com/api/events/f2-2025/submissions/?limit=25&offset=100' -H "Authorization: Token ${TOKEN}" | tee session5.json | jq .
 	curl -X GET 'https://schedule.fursquared.com/api/events/f2-2025/submissions/?limit=25&offset=125' -H "Authorization: Token ${TOKEN}" | tee session6.json | jq .
+
+transposed.xlsx: build.tab additional-panels.tab
+	./transposed.py -i build.tab -a additional-panels.tab
