@@ -35,3 +35,6 @@ transposed.xlsx: build.tab additional-panels.tab
 
 room-report.txt:
 	./report-rooms.py -i build.tab -i additional-panels.tab > $@
+
+panelist-hours-report.txt:
+	 ./report-panelist-hours.py -i build.tab -i additional-panels.tab > $@
