@@ -46,3 +46,6 @@ geckodriver.log
 
 # Ignore session jsons
 session*.json
+
+# Reports
+*report*.txt

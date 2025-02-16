@@ -32,3 +32,6 @@ session1.json:
 
 transposed.xlsx: build.tab additional-panels.tab
 	./transposed.py -i build.tab -a additional-panels.tab
+
+room-report.txt:
+	./report-rooms.py -i build.tab -i additional-panels.tab > $@
