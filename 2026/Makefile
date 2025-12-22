@@ -29,3 +29,4 @@ report-cards.txt: panels.tab
 	./generate-cards.pl > $@
 
 report-verify.txt: schedule.tab panels.tab
+	./verify.pl > $@

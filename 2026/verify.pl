@@ -38,24 +38,23 @@ my $panels = new Text::TabFile ('panels.tab', 1);
 my %panels; # complex hash of panel data, keyed by name
 
 while ( my $ref = $panels->Read ) {
-	my $id = $ref->{'Dittman ID'};
+	my $id = $ref->{'ID'};
 	my $title = $ref->{'Panel / Event Title:'};
-	warn("WARN: Skip!") && next if $ref->{'Dittman ID'} eq 'NO'; # Old section headers
-    warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
+	warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
 	$panels{$title}{'id'} = $id;
 	$panels{$title}{'title'} = $title;
 
 	# Additional data
 	$panels{$title}{'attend'} = $ref->{'Attendance'};
 	$panels{$title}{'length'} = $ref->{'Event Length'};
-	$panels{$title}{'pref'}{'thursday'} = $ref->{'D_Preference [Thursday]'};
-	$panels{$title}{'pref'}{'friday'}   = $ref->{'D_Preference [Friday]'};
-	$panels{$title}{'pref'}{'saturday'} = $ref->{'D_Preference [Saturday]'};
-	$panels{$title}{'pref'}{'sunday'}   = $ref->{'D_Preference [Sunday]'};
-	$panels{$title}{'avail'}{'thursday'} = $ref->{'D_Availability [Thursday]'};
-	$panels{$title}{'avail'}{'friday'}   = $ref->{'D_Availability [Friday]'};
-	$panels{$title}{'avail'}{'saturday'} = $ref->{'D_Availability [Saturday]'};
-	$panels{$title}{'avail'}{'sunday'}   = $ref->{'D_Availability [Sunday]'};
+	$panels{$title}{'pref'}{'thursday'} = avail_summary($ref->{'Preference [Thursday]'});
+	$panels{$title}{'pref'}{'friday'}   = avail_summary($ref->{'Preference [Friday]'});
+	$panels{$title}{'pref'}{'saturday'} = avail_summary($ref->{'Preference [Saturday]'});
+	$panels{$title}{'pref'}{'sunday'}   = avail_summary($ref->{'Preference [Sunday]'});
+	$panels{$title}{'avail'}{'thursday'} = avail_summary($ref->{'Availability [Thursday]'});
+	$panels{$title}{'avail'}{'friday'}   = avail_summary($ref->{'Availability [Friday]'});
+	$panels{$title}{'avail'}{'saturday'} = avail_summary($ref->{'Availability [Saturday]'});
+	$panels{$title}{'avail'}{'sunday'}   = avail_summary($ref->{'Availability [Sunday]'});
 
 	# Panelists
 	if ( $ref->{'Hosted by:'} ) {
@@ -335,4 +334,17 @@ sub find_panel_in_data {
 	}
 
 	return @matches;
+}
+
+sub avail_summary {
+  my $raw = shift @_;
+  return 'X' if $raw =~ /Not Available/;
+  return 'ABCD' if $raw =~ /Anytime/;
+  my $out;
+  $out .= 'A' if $raw =~ /Morning/;
+  $out .= 'B' if $raw =~ /Afternoon/;
+  $out .= 'C' if $raw =~ /Evening/;
+  $out .= 'D' if $raw =~ /Late Night/;
+  return $out if length($out) > 0;
+  return '?';
 }
