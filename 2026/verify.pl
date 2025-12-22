@@ -84,7 +84,7 @@ my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
 my @rooms = (qw/Crystal S201 MacArthur Mitchell Walker Kilbourn Schlitz 
-                Wright Empire Other/, 'H. Honors Lounge');
+                Wright Empire Other/, 'H. Honors Lounge', 'Regency ballroom');
 
 my %data; # Complex hash representing the panels already scheduled
 my %unscheduled; # Panel names that have cards but are not scheduled
@@ -101,6 +101,8 @@ while ( my $row = $schedule->Read ) {
 	} else { # These are cards in the parking lot
 		for my $column (@rooms, 'Room') {
 			for my $section ( qw/_1 _2 _3/ ) {
+                                next if $column eq 'MacArthur' and $section eq '_1';
+                                next if $column eq 'Regency ballroom' and $section eq '_1';
 				my $test = $row->{$column.$section};
 				$unscheduled{$test}++ if $test;
 			}
@@ -300,6 +302,25 @@ for my $panelist ( sort keys %simple_panelists) {
 }
 print "\n";
 
+### Schedule?
+
+my %possible;
+
+for my $title (keys %{$warnings{'NOT_IN_SCHEDULE'}}) {
+  my $thursday = $panels{$title}{'pref'}{'thursday'};
+  my $sunday = $panels{$title}{'pref'}{'sunday'};
+
+  $possible{'Thursday'}{$title}++ if $thursday !~ /X\?/;
+  $possible{'Sunday'}{$title}++ if $sunday !~ /X\?/;
+}
+
+for my $day (qw/Thursday Sunday/) {
+  print "Possible $day panels:\n";
+  for my $title ( sort { $a <=> $b } keys %{$possible{$day}} ) {
+    print " * $title\n";
+  }
+  print "\n";
+}
 
 ### Subroutines
 

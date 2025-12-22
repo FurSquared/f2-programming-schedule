@@ -20,7 +20,7 @@ panels.tab:
 # few lines of room detail are removed.
 schedule.tab: F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv
 	tail +7 F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv | head -n1 > $@
-	tail +10 F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv >> $@
+	tail +10 F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv | perl -ne '!/^[\t\s]+$$/ && print' >> $@
 
 # Print out the "cards" for the panel. That is, short-hand short-hand text
 # that shows the availability of the panelist and their preferences. This
