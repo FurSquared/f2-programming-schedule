@@ -49,3 +49,4 @@ session*.json
 
 # Reports
 *report*.txt
+*report*.html

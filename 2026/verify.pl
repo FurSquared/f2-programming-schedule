@@ -310,14 +310,16 @@ for my $title (keys %{$warnings{'NOT_IN_SCHEDULE'}}) {
   my $thursday = $panels{$title}{'pref'}{'thursday'};
   my $sunday = $panels{$title}{'pref'}{'sunday'};
 
-  $possible{'Thursday'}{$title}++ if $thursday !~ /X\?/;
-  $possible{'Sunday'}{$title}++ if $sunday !~ /X\?/;
+  $possible{'Thursday'}{$title}++ if $thursday !~ /[X\?]/;
+  $possible{'Sunday'}{$title}++ if $sunday !~ /[X\?]/;
 }
 
 for my $day (qw/Thursday Sunday/) {
   print "Possible $day panels:\n";
   for my $title ( sort { $a <=> $b } keys %{$possible{$day}} ) {
     print " * $title\n";
+    print "   " . card($title);
+    print "\n";
   }
   print "\n";
 }
@@ -368,4 +370,17 @@ sub avail_summary {
   $out .= 'D' if $raw =~ /Late Night/;
   return $out if length($out) > 0;
   return '?';
+}
+
+sub card {
+  my $title = shift @_;
+  my @ret;
+  for my $day (qw/thursday friday saturday sunday/) {
+    push @ret, $panels{$title}{'pref'}{$day};
+  }
+  push @ret, "|";
+  for my $day (qw/thursday friday saturday sunday/) {
+    push @ret, $panels{$title}{'avail'}{$day};
+  }
+  return join(" ",@ret) . "\n";
 }

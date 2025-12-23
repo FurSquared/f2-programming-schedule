@@ -28,5 +28,10 @@ schedule.tab: F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv
 report-cards.txt: panels.tab
 	./generate-cards.pl > $@
 
+# The verification report: look for trouble on the schedule.
 report-verify.txt: schedule.tab panels.tab
 	./verify.pl > $@
+
+# A HTML file of panel info, useful to hand to the conbook
+report-descriptions.html: panels.tab
+	./export-descriptions.pl > $@
