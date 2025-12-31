@@ -35,8 +35,8 @@ while ( my $ref = $panels->Read ) {
 	$panels{$title}{'desc'} = $ref->{'Event / Panel Description:'};
 	$panels{$title}{'category'} = $ref->{'Category:'};
 
-    $panels{$title}{'hosts'} = $ref->{'Hosted by:'};
-    $panels{$title}{'guests'} = $ref->{'Special Guests'};
+	$panels{$title}{'hosts'} = $ref->{'Hosted by:'};
+	$panels{$title}{'guests'} = $ref->{'Special Guests'};
 
 	# Panelists
 	if ( $ref->{'Hosted by:'} ) {
@@ -63,6 +63,13 @@ my $schedule = new Text::TabFile ('schedule.tab', 1);
 
 my @days = qw/thursday friday saturday sunday/;
 
+my %next_day = (
+	'thursday' => 'friday',
+	'friday' => 'saturday',
+	'saturday' => 'sunday',
+);
+my %next_day_hours = map {$_ => 1} ('12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM');
+
 my %headers;
 my $day_position = -1;
 for my $header ($schedule->fields) {
@@ -83,6 +90,10 @@ while ( my $row = $schedule->Read ) {
 				if ( $row->{$key} ) {
 					#print STDERR "$room\n";
 					my $panel = $row->{$key};
+
+					next if $panel eq 'CLOSED';
+					next if $panel eq 'Not Available';
+
 					if ( $room eq 'Other' ) {
 						if ( $panel =~ /(.+) \((.+)\)/ ) {
           						$panel = $1;
@@ -96,9 +107,18 @@ while ( my $row = $schedule->Read ) {
 						warn("Scheduled '$panel' is not in the panel list.")
 					} else {
 						my $room_rewrite = $room;
-						$room_rewrite = 'Crystal' if $room =~ /Crystal/;
-						$room_rewrite = 'Empire' if $room =~ /Empire/;
-						push @{$panels{$panel}{'when'}}, [$day, $time, $room_rewrite]
+						$room_rewrite = 'Crystal ballroom' if $room =~ /Crystal/;
+						$room_rewrite = 'Empire ballroom' if $room =~ /Empire/;
+                                                $room_rewrite = 'Hilton Honors Lounge' if $room =~ /Honors L/;
+
+						# We display early-morning hours on previous day in the spreadsheet.
+						my $actual_day = $day; 
+						if ( $next_day_hours{$time} ) {
+							$actual_day = $next_day{$day};
+							die "Next day lookup failed for: $panel ($day)" unless $next_day{$day};
+						}
+
+						push @{$panels{$panel}{'when'}}, [$actual_day, $time, $room_rewrite]
 					}
 				}
 			}
@@ -118,7 +138,8 @@ for my $panel ( sort keys %panels ) {
 		my @times = @{$p->{'when'}}; # Panel can be multiple times
 		@when = @{$times[0]}; # Just use the first time
 	        print tl(@when, (map {$p->{$_}} @heads));
+	} else {
+		warn "Skipping $p->{'title'} as it is unscheduled";
+		#print tl(@when, (map {$p->{$_}} @heads));
 	}
-	warn "Skipping $p->{'title'} as it is unscheduled";
-	#print tl(@when, (map {$p->{$_}} @heads));
 }

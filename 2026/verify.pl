@@ -213,9 +213,14 @@ for my $day (keys %data) {
 			die "Bad time code ($time)" unless $time_code;
 			my $time_pref = $panels{$scheduled_panel}{'pref'}{$day};
 			my $time_avail = $panels{$scheduled_panel}{'avail'}{$day};
+
 			if ( $length =~ /SPECIAL TIME/ ) {
 				# Special schedule panels, don't usually have avail data
-			} elsif ( !$time_avail ) {
+                        } elsif ( $time_pref =~ /$time_code/ ) {
+                                # We're in our preferred time. We are good.
+                        } elsif ( $time_pref eq "?" && $time_avail =~ /$time_code/ ) {
+                                # No pref, but we are in our available times. We are good.
+			} elsif ( $time_avail eq '?' or !$time_avail ) {
 				$warnings{'AVAIL_NO_DATA'}{$scheduled_panel}++;
 			} elsif ( $time_avail =~ /X/ or $time_avail !~ /$time_code/ ) {
 				$warnings{'AVAIL_BAD'} {$scheduled_panel} = "$time_code vs PREF: $time_pref / AVAIL: $time_avail";

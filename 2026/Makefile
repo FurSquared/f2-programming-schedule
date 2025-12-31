@@ -1,4 +1,4 @@
-all: report-cards.txt build.tab
+all: build-programming.tsv build-tabletop.tsv report-verify.txt
 
 clean:
 	rm -v report-*.txt build.tab panels.tab schedule.tab || true
@@ -11,6 +11,12 @@ realclean superclean: clean
 # other scripts and systems can use.
 build.tab: panels.tab schedule.tab
 	./create-loadfile.pl > $@
+build-programming.tsv: build.tab
+	head -1 build.tab > $@
+	tail +2 build.tab | grep -v "Hilton Honors Lounge" >> $@
+build-tabletop.tsv: build.tab
+	head -1 build.tab > $@
+	tail +2 build.tab | grep "Hilton Honors Lounge" >> $@
 
 # Pre-processing - removing leading-blank lines from the Schedule tsv
 panels.tab:
