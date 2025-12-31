@@ -13,10 +13,11 @@ build.tab: panels.tab schedule.tab
 	./create-loadfile.pl > $@
 build-programming.tsv: build.tab
 	head -1 build.tab > $@
-	tail +2 build.tab | grep -v "Hilton Honors Lounge" >> $@
+	tail +2 build.tab | grep -v "Hilton Honors Lounge" | grep -v "Monarch Lounge" >> $@
 build-tabletop.tsv: build.tab
 	head -1 build.tab > $@
 	tail +2 build.tab | grep "Hilton Honors Lounge" >> $@
+	tail +2 build.tab | grep "Monarch Lounge" >> $@
 
 # Pre-processing - removing leading-blank lines from the Schedule tsv
 panels.tab:

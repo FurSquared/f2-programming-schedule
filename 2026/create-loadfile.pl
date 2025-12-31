@@ -16,6 +16,12 @@ Using schedule.tab and the Panels to schedule file, create a loadfile for pretal
 my $panel_list_file = 'panels.tab';
 my $schedule_file = 'schedule.tab';
 
+my %ignore_these_panels = map {$_=>1} (
+	'CLOSED', 'Not Available',
+        'Hotel Cleanup', 'Hotel Setup', 'Hotel Setup Time',
+	'DJ Seating', 'Set to DJ', 'Dance Seating', 'Set to Dance', 'Set to Theater', 'Theater Seating'
+);
+
 ### Read the panel list
 
 my $panels = new Text::TabFile ($panel_list_file, 1);
@@ -91,8 +97,7 @@ while ( my $row = $schedule->Read ) {
 					#print STDERR "$room\n";
 					my $panel = $row->{$key};
 
-					next if $panel eq 'CLOSED';
-					next if $panel eq 'Not Available';
+					next if $ignore_these_panels{$panel};
 
 					if ( $room eq 'Other' ) {
 						if ( $panel =~ /(.+) \((.+)\)/ ) {
@@ -136,8 +141,17 @@ for my $panel ( sort keys %panels ) {
 	my @when = ('', '', '');
 	if ( defined $p->{'when'} ) {
 		my @times = @{$p->{'when'}}; # Panel can be multiple times
-		@when = @{$times[0]}; # Just use the first time
+		@when = @{shift @times}; # Just use the first time
 	        print tl(@when, (map {$p->{$_}} @heads));
+
+                my $count = 0;
+		for my $additional_time (@times) {
+			warn "[$panel] is duped!";
+			my @out = (@$additional_time, (map {$p->{$_}} @heads));
+                        $out[5] = $p->{'id'} .'-'. ++$count;
+			print tl(@out);
+                }
+
 	} else {
 		warn "Skipping $p->{'title'} as it is unscheduled";
 		#print tl(@when, (map {$p->{$_}} @heads));
