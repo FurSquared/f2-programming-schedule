@@ -11,10 +11,13 @@ from time import sleep
 import argparse
 import csv
 
+
 def main():
     """The main program -- do I really need to docstring this?"""
     parser = argparse.ArgumentParser()
-    parser.add_argument("-i", "--input", action='append', help="Input tabfile", required=True)
+    parser.add_argument(
+        "-i", "--input", action="append", help="Input tabfile", required=True
+    )
     args = parser.parse_args()
 
     schedule = {}
@@ -40,15 +43,23 @@ def main():
 
                 if day and time and length:
                     if row["day"] == "thursday":
-                        start = datetime.strptime(f'2026-02-05 {time}', "%Y-%m-%d %I:%M %p")
+                        start = datetime.strptime(
+                            f"2026-02-05 {time}", "%Y-%m-%d %I:%M %p"
+                        )
                     if row["day"] == "friday":
-                        start = datetime.strptime(f'2026-02-06 {time}', "%Y-%m-%d %I:%M %p")
+                        start = datetime.strptime(
+                            f"2026-02-06 {time}", "%Y-%m-%d %I:%M %p"
+                        )
                     if row["day"] == "saturday":
-                        start = datetime.strptime(f'2026-02-07 {time}', "%Y-%m-%d %I:%M %p")
+                        start = datetime.strptime(
+                            f"2026-02-07 {time}", "%Y-%m-%d %I:%M %p"
+                        )
                     if row["day"] == "sunday":
-                        start = datetime.strptime(f'2026-02-08 {time}', "%Y-%m-%d %I:%M %p")
+                        start = datetime.strptime(
+                            f"2026-02-08 {time}", "%Y-%m-%d %I:%M %p"
+                        )
 
-                    if time in ['12:00 AM', '12:30 AM', '1:00 AM', '1:30 AM']:
+                    if time in ["12:00 AM", "12:30 AM", "1:00 AM", "1:30 AM"]:
                         start = start + timedelta(minutes=1440)
 
                     end = start + timedelta(minutes=int(length))
@@ -61,12 +72,12 @@ def main():
                     schedule[room] = {}
                 if day not in schedule[room]:
                     schedule[room][day] = {}
-                schedule[room][day][hour_start] = [ start, end, title ]
+                schedule[room][day][hour_start] = [start, end, title]
 
-    #pprint(schedule)
+    # pprint(schedule)
 
     for room, info in sorted(schedule.items()):
-        for day in ['thursday', 'friday', 'saturday', 'sunday']:
+        for day in ["thursday", "friday", "saturday", "sunday"]:
             if day in info:
                 print(f"\n{room} - {day}\n")
                 for hour, panel in sorted(info[day].items()):
