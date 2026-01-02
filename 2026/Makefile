@@ -1,7 +1,7 @@
-all: build-programming.tsv build-tabletop.tsv report-verify.txt
+all: build-programming.tsv build-tabletop.tsv build-video.tsv report-rooms.txt report-verify.txt
 
 clean:
-	rm -v report-*.txt build.tab panels.tab schedule.tab || true
+	rm -v report-*.txt build*.t?? panels.tab schedule.tab || true
 
 # Also removing source files
 realclean superclean: clean
@@ -13,11 +13,14 @@ build.tab: panels.tab schedule.tab
 	./create-loadfile.pl > $@
 build-programming.tsv: build.tab
 	head -1 build.tab > $@
-	tail +2 build.tab | grep -v "Hilton Honors Lounge" | grep -v "Monarch Lounge" >> $@
+	tail +2 build.tab | grep -v "Hilton Honors Lounge" | grep -v "Monarch Lounge" | grep -v "Wright B+C" >> $@
 build-tabletop.tsv: build.tab
 	head -1 build.tab > $@
 	tail +2 build.tab | grep "Hilton Honors Lounge" >> $@
 	tail +2 build.tab | grep "Monarch Lounge" >> $@
+build-video.tsv: build.tab
+	head -1 build.tab > $@
+	tail +2 build.tab | grep "Wright B+C" >> $@
 
 # Pre-processing - removing leading-blank lines from the Schedule tsv
 panels.tab:
@@ -35,10 +38,15 @@ schedule.tab: F2\ 2026\ Schedule\ MASTER\ -\ Schedule.tsv
 report-cards.txt: panels.tab
 	./generate-cards.pl > $@
 
+# A HTML file of panel info, useful to hand to the conbook
+report-descriptions.html: panels.tab
+	./export-descriptions.pl > $@
+
+# A breakdown of events by room
+report-rooms.txt: build.tab
+	./report-rooms.py -i build.tab > $@
+
 # The verification report: look for trouble on the schedule.
 report-verify.txt: schedule.tab panels.tab
 	./verify.pl > $@
 
-# A HTML file of panel info, useful to hand to the conbook
-report-descriptions.html: panels.tab
-	./export-descriptions.pl > $@
