@@ -16,6 +16,16 @@ use strict;
 
 =cut
 
+my %ignore_these_panels = map {$_=>1} (
+        'CLOSED', 'Not Available',
+        'Hotel Cleanup', 'Hotel Setup', 'Hotel Setup Time',
+        'DJ Seating', 'Set to DJ', 'Dance Seating', 'Set to Dance', 'Set to Theater', 'Theater Seating'
+);
+
+my @rooms = (qw/Crystal S201 MacArthur Mitchell Walker Kilbourn Schlitz 
+                Wright Empire Other/, 'H. Honors Lounge', 'H. Honors Lounge 2',
+                'Regency ballroom');
+
 ### Read the panel list
 
 my %dittman_time_code;
@@ -40,6 +50,7 @@ my %panels; # complex hash of panel data, keyed by name
 while ( my $ref = $panels->Read ) {
 	my $id = $ref->{'ID'};
 	my $title = $ref->{'Panel / Event Title:'};
+
 	warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
 	$panels{$title}{'id'} = $id;
 	$panels{$title}{'title'} = $title;
@@ -83,9 +94,6 @@ print scalar(keys %panels), " panels found on the master list.\n";
 my $schedule = new Text::TabFile ('schedule.tab', 1);
 my @header = $schedule->fields;
 
-my @rooms = (qw/Crystal S201 MacArthur Mitchell Walker Kilbourn Schlitz 
-                Wright Empire Other/, 'H. Honors Lounge', 'Regency ballroom');
-
 my %data; # Complex hash representing the panels already scheduled
 my %unscheduled; # Panel names that have cards but are not scheduled
 
@@ -101,8 +109,6 @@ while ( my $row = $schedule->Read ) {
 	} else { # These are cards in the parking lot
 		for my $column (@rooms, 'Room') {
 			for my $section ( qw/_1 _2 _3/ ) {
-                                next if $column eq 'MacArthur' and $section eq '_1';
-                                next if $column eq 'Regency ballroom' and $section eq '_1';
 				my $test = $row->{$column.$section};
 				$unscheduled{$test}++ if $test;
 			}
@@ -139,7 +145,7 @@ for my $day (keys %data) {
 	for my $room (keys %{$data{$day}}) {
 		for my $time (sort keys %{$data{$day}{$room}}) {
 			my $scheduled_panel = $data{$day}{$room}{$time};
-			next if $scheduled_panel =~ /^CLOSED$/i;
+			next if $ignore_these_panels{$scheduled_panel};
 			$scheduled_panels{$scheduled_panel}++;
 
 			# Check: Does the scheduled panel exist in the panel list
