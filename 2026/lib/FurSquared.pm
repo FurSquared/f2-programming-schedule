@@ -11,6 +11,20 @@ my %ignore_these_panels = map {$_=>1} (
 	'DJ Seating', 'Set to DJ', 'Dance Seating', 'Set to Dance', 'Set to Theater', 'Theater Seating'
 );
 
+my %fix_name = (
+  'Rhubarb' => qr/rhubarb\s*nido/i,
+  'keyotter' => qr/key\s*otter/i,
+  'Cornel the Otter' => qr/cornel(\s*(the\s+)?otter)?$/i,
+  'Pepper Coyote' => qr/pepper(\s*coyote)/i,
+);
+
+my @skip_name = (
+  qr/^N\/?A$/,
+  qr/^TBD$/,
+  qr/^and more$/,
+);
+
+### Methods
 
 sub parse_panels {
   my $file = shift @_;
@@ -31,22 +45,16 @@ sub parse_panels {
     $panels{$title}{'desc'} = $ref->{'Event / Panel Description:'};
     $panels{$title}{'category'} = $ref->{'Category:'};
 
-    $panels{$title}{'hosts'} = $ref->{'Hosted by:'};
-    $panels{$title}{'guests'} = $ref->{'Special Guests'};
+    my @hosts = &extract_names($ref->{'Hosted by:'});
+    my @guests = &extract_names($ref->{'Special Guests'});
+
+    $panels{$title}{'hosts'} = join(', ', @hosts);
+    $panels{$title}{'guests'} = join(', ', @guests);
 
     # Panelists
-    if ( $ref->{'Hosted by:'} ) {
-      for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
-        $panels{$title}{'panelists'}{$host}++;
-        $panelists{$host}{$title}++;
-      }
-    }
-
-    if ( $ref->{'Special Guests'} ) {
-      for my $host ( split /\s*[,;\&]\s*/, $ref->{'Special Guests'} ) {
-        $panels{$title}{'panelists'}{$host}++;
-        $panelists{$host}{$title}++;
-      }
+    for my $name (@hosts, @guests) {
+      $panels{$title}{'panelists'}{$name}++;
+      $panelists{$name}{$title}++;
     }
 
     # Input cleanup
@@ -125,4 +133,30 @@ sub add_schedule_to_panels {
     }
   }
   return \%panels;
+}
+
+sub extract_names {
+  my $raw = shift @_;
+  my @out;
+  for my $candidate ( split /\s*[,;&]\s*/, $raw ) {
+    for my $corrected_name ( keys %fix_name ) {
+      for my $skip (@skip_name) {
+        if ( $candidate =~ /$skip/ ) {
+          warn "NAMES: Ignoring \"$candidate\"";
+          $candidate = undef;
+        }
+      }
+      if ($candidate =~ /$fix_name{$corrected_name}/) {
+        warn "NAMES: Correcting \"$candidate\" to \"$corrected_name\"" unless $candidate eq $corrected_name;
+        $candidate = $corrected_name;
+        last;
+      }
+      if ( $candidate =~ /^(and|host:) (.+)$/i ) {
+        warn "NAMES: Correcting \"$candidate\" to \"$2\"";
+        $candidate = $2;
+      }
+    }
+    push @out, $candidate if $candidate;
+  }
+  return @out
 }
