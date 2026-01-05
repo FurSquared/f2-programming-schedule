@@ -23,8 +23,11 @@ build-video.tsv: build.tab
 	tail +2 build.tab | grep "Wright B+C" >> $@
 
 # Pre-processing - removing leading-blank lines from the Schedule tsv
-panels.tab:
+panels.tab: F2\ 2026\ Schedule\ MASTER\ -\ Panels\ to\ Schedule.tsv
 	cat "F2 2026 Schedule MASTER - Panels to Schedule.tsv" | grep -v "^			" > $@
+
+panels-removed.tab: F2\ 2026\ Schedule\ MASTER\ -\ Panels\ removed_rejected.tsv
+	cat 'F2 2026 Schedule MASTER - Panels removed_rejected.tsv' | grep -v "^			" > $@
 
 # Pre-processing: A header-cleaned version of the Schedule tsv so the first
 # few lines of room detail are removed.
@@ -37,6 +40,10 @@ schedule.tab: F2\ 2026\ Schedule\ MASTER\ -\ CURRENT\ SCHEDULE.tsv
 # is put in the cell-notes on the "card" in master schedule spreadsheet
 report-cards.txt: panels.tab
 	./generate-cards.pl > $@
+
+# Check if the IDs are contiguous. Did we drop something?
+report-ids.txt: panels.tab panels-removed.tab
+	./check-ids.pl panels.tab panels-removed.tab > $@
 
 # A HTML file of panel info, useful to hand to the conbook
 report-descriptions.html: panels.tab

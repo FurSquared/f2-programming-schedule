@@ -12,10 +12,13 @@ my %ignore_these_panels = map {$_=>1} (
 );
 
 my %fix_name = (
-  'Rhubarb' => qr/rhubarb\s*nido/i,
-  'keyotter' => qr/key\s*otter/i,
+  'Alkali Bismuth' => qr/alkali(\s*bismuth)?/i,
+  'Boozy Badger' => qr/boozy(\s*badger)?/i,
   'Cornel the Otter' => qr/cornel(\s*(the\s+)?otter)?$/i,
-  'Pepper Coyote' => qr/pepper(\s*coyote)/i,
+  'keyotter' => qr/key\s*otter/i,
+  'Pepper Coyote' => qr/pepper(\s*coyote)?/i,
+  'Rhubarb' => qr/rhubarb\s*nido/i,
+  'Status Ferret' => qr/status(\s*ferret)?/i,
 );
 
 my @skip_name = (
