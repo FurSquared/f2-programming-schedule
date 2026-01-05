@@ -5,6 +5,9 @@ use String::Similarity;
 use Text::TabFile;
 use strict;
 
+use lib 'lib';
+use FurSquared qw/extract_names parse_panels add_schedule_to_panels/;
+
 =head1 Check the schedule against the panel list
 
  * Does the scheduled panel exist in the panel list?
@@ -43,48 +46,17 @@ for my $i (0 .. $#times) {
 	$next_time{$times[$i]} = $times[$i+1] if $i+1 <= $#times;
 }
 
-my $panels = new Text::TabFile ('panels.tab', 1);
+### Read the panel list
 
-my %panels; # complex hash of panel data, keyed by name
+my $panel_list_file = 'panels.tab';
+my $schedule_file = 'schedule.tab';
 
-while ( my $ref = $panels->Read ) {
-	my $id = $ref->{'ID'};
-	my $title = $ref->{'Panel / Event Title:'};
+my @pnp = parse_panels($panel_list_file);
+my %panels = %{$pnp[0]};
+my %panelists = %{$pnp[1]};
 
-	warn("WARN: Overwriting \"$title\" ($id vs $panels{$title}{'id'})") if exists($panels{$title});
-	$panels{$title}{'id'} = $id;
-	$panels{$title}{'title'} = $title;
-
-	# Additional data
-	$panels{$title}{'attend'} = $ref->{'Attendance'};
-	$panels{$title}{'length'} = $ref->{'Event Length'};
-	$panels{$title}{'pref'}{'thursday'} = avail_summary($ref->{'Preference [Thursday]'});
-	$panels{$title}{'pref'}{'friday'}   = avail_summary($ref->{'Preference [Friday]'});
-	$panels{$title}{'pref'}{'saturday'} = avail_summary($ref->{'Preference [Saturday]'});
-	$panels{$title}{'pref'}{'sunday'}   = avail_summary($ref->{'Preference [Sunday]'});
-	$panels{$title}{'avail'}{'thursday'} = avail_summary($ref->{'Availability [Thursday]'});
-	$panels{$title}{'avail'}{'friday'}   = avail_summary($ref->{'Availability [Friday]'});
-	$panels{$title}{'avail'}{'saturday'} = avail_summary($ref->{'Availability [Saturday]'});
-	$panels{$title}{'avail'}{'sunday'}   = avail_summary($ref->{'Availability [Sunday]'});
-
-	# Panelists
-	if ( $ref->{'Hosted by:'} ) {
-		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Hosted by:'} ) {
-			$panels{$title}{'panelists'}{$host}++;
-		}
-	} else {
-		warn("WARN: $title ($id) has no host\n");
-	}
-
-	if ( $ref->{'Special Guests'} ) {
-		for my $host ( split /\s*[,;\&]\s*/, $ref->{'Special Guests'} ) {
-			$panels{$title}{'panelists'}{$host}++;
-		}
-	}
-
-	# Input cleanup
-	$panels{$title}{'length'} =~ s/\s+minutes\s*//ig;
-}
+my $ret = add_schedule_to_panels($schedule_file, \%panels);
+%panels = %{$ret};
 
 #print Dumper(\%panels);
 print scalar(keys %panels), " panels found on the master list.\n";
@@ -101,10 +73,37 @@ while ( my $row = $schedule->Read ) {
 	my $time = $row->{'Room'};
 	if ($time =~ /(AM|PM)/ ) { # These are scheduled panels
 		for my $room (@rooms) {
-			$data{'thursday'}{$room}{$time} = $row->{$room}      if $row->{$room};
-			$data{'friday'}{$room}{$time}   = $row->{$room.'_1'} if $row->{$room.'_1'};
-			$data{'saturday'}{$room}{$time} = $row->{$room.'_2'} if $row->{$room.'_2'};
-			$data{'sunday'}{$room}{$time}   = $row->{$room.'_3'} if $row->{$room.'_3'};
+			if ( $room eq 'Other' ) {
+				if ( $row->{'Other'} =~ /(.+) \((.+)\)/ ) {
+					$data{'thursday'}{$2}{$time} = $1;
+				} else {
+					die "Other room fail: '" . $row->{'Other'} . "'" if $row->{'Other'};
+ 				}
+
+				if ( $row->{'Other_1'} =~ /(.+) \((.+)\)/ ) {
+					$data{'friday'}{$2}{$time} = $1;
+				} else {
+					die "Other room fail: '" . $row->{'Other_1'} . "'" if $row->{'Other_1'};
+ 				}
+
+				if ( $row->{'Other_2'} =~ /(.+) \((.+)\)/ ) {
+					$data{'saturday'}{$2}{$time} = $1;
+				} else {
+					die "Other room fail: '" . $row->{'Other_2'} . "'" if $row->{'Other_2'};
+ 				}
+
+				if ( $row->{'Other_3'} =~ /(.+) \((.+)\)/ ) {
+					$data{'sunday'}{$2}{$time} = $1;
+				} else {
+					die "Other room fail: '" . $row->{'Other_3'} . "'" if $row->{'Other_3'};
+ 				}
+
+			} else {
+				$data{'thursday'}{$room}{$time} = $row->{$room}      if $row->{$room};
+				$data{'friday'}{$room}{$time}   = $row->{$room.'_1'} if $row->{$room.'_1'};
+				$data{'saturday'}{$room}{$time} = $row->{$room.'_2'} if $row->{$room.'_2'};
+				$data{'sunday'}{$room}{$time}   = $row->{$room.'_3'} if $row->{$room.'_3'};
+			}
 		}
 	} else { # These are cards in the parking lot
 		for my $column (@rooms, 'Room') {

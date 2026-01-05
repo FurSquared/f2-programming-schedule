@@ -41,9 +41,21 @@ sub parse_panels {
     $panels{$title}{'title'} = $title;
 
     # Additional data
-    $panels{$title}{'length'} = $ref->{'Event Length'};
+    $panels{$title}{'attend'} = $ref->{'Attendance'};
     $panels{$title}{'desc'} = $ref->{'Event / Panel Description:'};
     $panels{$title}{'category'} = $ref->{'Category:'};
+    $panels{$title}{'length'} = $ref->{'Event Length'};
+
+    $panels{$title}{'pref'}{'thursday'} = avail_summary($ref->{'Preference [Thursday]'});
+    $panels{$title}{'pref'}{'friday'}   = avail_summary($ref->{'Preference [Friday]'});
+    $panels{$title}{'pref'}{'saturday'} = avail_summary($ref->{'Preference [Saturday]'});
+    $panels{$title}{'pref'}{'sunday'}   = avail_summary($ref->{'Preference [Sunday]'});
+    $panels{$title}{'avail'}{'thursday'} = avail_summary($ref->{'Availability [Thursday]'});
+    $panels{$title}{'avail'}{'friday'}   = avail_summary($ref->{'Availability [Friday]'});
+    $panels{$title}{'avail'}{'saturday'} = avail_summary($ref->{'Availability [Saturday]'});
+    $panels{$title}{'avail'}{'sunday'}   = avail_summary($ref->{'Availability [Sunday]'});
+
+    # Panelists
 
     my @hosts = &extract_names($ref->{'Hosted by:'});
     my @guests = &extract_names($ref->{'Special Guests'});
@@ -51,7 +63,6 @@ sub parse_panels {
     $panels{$title}{'hosts'} = join(', ', @hosts);
     $panels{$title}{'guests'} = join(', ', @guests);
 
-    # Panelists
     for my $name (@hosts, @guests) {
       $panels{$title}{'panelists'}{$name}++;
       $panelists{$name}{$title}++;
