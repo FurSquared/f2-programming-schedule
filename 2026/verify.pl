@@ -27,7 +27,7 @@ my %ignore_these_panels = map {$_=>1} (
 
 my @rooms = (qw/Crystal S201 MacArthur Mitchell Walker Kilbourn Schlitz 
                 Wright Empire Other/, 'H. Honors Lounge', 'H. Honors Lounge 2',
-                'Regency ballroom');
+                'Regency ballroom', 'Wright B+C');
 
 ### Read the panel list
 
@@ -369,18 +369,6 @@ sub find_panel_in_data {
 	return @matches;
 }
 
-sub avail_summary {
-  my $raw = shift @_;
-  return 'X' if $raw =~ /Not Available/;
-  return 'ABCD' if $raw =~ /Anytime/;
-  my $out;
-  $out .= 'A' if $raw =~ /Morning/;
-  $out .= 'B' if $raw =~ /Afternoon/;
-  $out .= 'C' if $raw =~ /Evening/;
-  $out .= 'D' if $raw =~ /Late Night/;
-  return $out if length($out) > 0;
-  return '?';
-}
 
 sub card {
   my $title = shift @_;

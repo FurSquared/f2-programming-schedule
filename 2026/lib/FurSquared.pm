@@ -162,7 +162,7 @@ sub extract_names {
         $candidate = $corrected_name;
         last;
       }
-      if ( $candidate =~ /^(and|host:) (.+)$/i ) {
+      if ( $candidate =~ /^(and|hosts?:|hosted by:) (.+)$/i ) {
         warn "NAMES: Correcting \"$candidate\" to \"$2\"";
         $candidate = $2;
       }
@@ -171,3 +171,17 @@ sub extract_names {
   }
   return @out
 }
+
+sub avail_summary {
+  my $raw = shift @_;
+  return 'X' if $raw =~ /Not Available/;
+  return 'ABCD' if $raw =~ /Anytime/;
+  my $out;
+  $out .= 'A' if $raw =~ /Morning/;
+  $out .= 'B' if $raw =~ /Afternoon/;
+  $out .= 'C' if $raw =~ /Evening/;
+  $out .= 'D' if $raw =~ /Late Night/;
+  return $out if length($out) > 0;
+  return '?';
+}
+
