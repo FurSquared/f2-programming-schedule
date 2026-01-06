@@ -134,10 +134,10 @@ sub add_schedule_to_panels {
 
               # We display early-morning hours on previous day in the spreadsheet.
               my $actual_day = $day; 
-              if ( $next_day_hours{$time} ) {
-                $actual_day = $next_day{$day};
-                die "Next day lookup failed for: $panel ($day)" unless $next_day{$day};
-              }
+              #if ( $next_day_hours{$time} ) {
+              #  $actual_day = $next_day{$day};
+              #  die "Next day lookup failed for: $panel ($day)" unless $next_day{$day};
+              #}
 
               push @{$panels{$panel}{'when'}}, [$actual_day, $time, $room_rewrite]
             }

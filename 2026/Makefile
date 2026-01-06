@@ -57,3 +57,6 @@ report-rooms.txt: build.tab
 report-verify.txt: schedule.tab panels.tab
 	./verify.pl > $@
 
+# Pivot the schedule to the side
+transposed.xlsx: build.tab
+	./transposed.py -i build.tab
