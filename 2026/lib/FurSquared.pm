@@ -130,7 +130,7 @@ sub add_schedule_to_panels {
               my $room_rewrite = $room;
               $room_rewrite = 'Crystal ballroom' if $room =~ /Crystal/;
               $room_rewrite = 'Empire ballroom' if $room =~ /Empire/;
-              $room_rewrite = 'Hilton Honors Lounge' if $room =~ /Honors L/;
+              #$room_rewrite = 'Hilton Honors Lounge' if $room =~ /Honors L/;
 
               # We display early-morning hours on previous day in the spreadsheet.
               my $actual_day = $day; 
