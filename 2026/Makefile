@@ -14,6 +14,7 @@ build.tab: panels.tab schedule.tab
 build-programming.tsv: build.tab
 	head -1 build.tab > $@
 	tail +2 build.tab | grep -v "Hilton Honors Lounge" | grep -v "Monarch Lounge" | grep -v "Wright B+C" >> $@
+	tail +2 additional.tab >> $@
 build-tabletop.tsv: build.tab
 	head -1 build.tab > $@
 	tail +2 build.tab | grep "Hilton Honors Lounge" >> $@

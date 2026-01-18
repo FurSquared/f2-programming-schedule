@@ -12,6 +12,7 @@ my %ignore_these_panels = map {$_=>1} (
 );
 
 my %fix_name = (
+  'Aetus' => qr/(hal)?\s*aetus/i,
   'Alkali Bismuth' => qr/alkali(\s*bismuth)?/i,
   'Boozy Badger' => qr/boozy(\s*badger)?/i,
   'Cornel the Otter' => qr/cornel(\s*(the\s+)?otter)?$/i,
@@ -22,9 +23,11 @@ my %fix_name = (
 );
 
 my @skip_name = (
-  qr/^N\/?A$/,
-  qr/^TBD$/,
+  qr/^N\/?A$/i,
+  qr/^no(ne)?$/i,
+  qr/^TB[AD]$/,
   qr/^and more$/,
+  qr/\d\s?-\s?\d special guests/i,
 );
 
 ### Methods
@@ -130,14 +133,14 @@ sub add_schedule_to_panels {
               my $room_rewrite = $room;
               $room_rewrite = 'Crystal ballroom' if $room =~ /Crystal/;
               $room_rewrite = 'Empire ballroom' if $room =~ /Empire/;
-              #$room_rewrite = 'Hilton Honors Lounge' if $room =~ /Honors L/;
+              $room_rewrite = 'Hilton Honors Lounge' if $room =~ /Honors L/;
 
               # We display early-morning hours on previous day in the spreadsheet.
               my $actual_day = $day; 
-              #if ( $next_day_hours{$time} ) {
-              #  $actual_day = $next_day{$day};
-              #  die "Next day lookup failed for: $panel ($day)" unless $next_day{$day};
-              #}
+              if ( $next_day_hours{$time} ) {
+                $actual_day = $next_day{$day};
+                die "Next day lookup failed for: $panel ($day)" unless $next_day{$day};
+              }
 
               push @{$panels{$panel}{'when'}}, [$actual_day, $time, $room_rewrite]
             }
